@@ -88,23 +88,6 @@ pub fn parse_ps_line_borrowed(line: &str) -> Option<PsLine<'_>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::services::CommandOutput;
-    use std::io;
-
-    struct FakeRunner(&'static str);
-    impl CommandRunner for FakeRunner {
-        fn run(&self, program: &str, args: &[&str]) -> io::Result<CommandOutput> {
-            assert_eq!(program, "env");
-            assert_eq!(args[..2], ["TZ=UTC", "ps"]);
-            assert_eq!(args.last(), Some(&"1,2"));
-            Ok(CommandOutput {
-                success: false,
-                stdout: self.0.into(),
-                stderr: String::new(),
-            })
-        }
-    }
-
     #[test]
     fn parses_lines() {
         assert_eq!(
@@ -129,13 +112,34 @@ mod tests {
         assert_eq!(parse_ps_line_borrowed("garbage"), None);
     }
 
-    #[test]
+    /// Windows does not use `ps`, so neither the fake nor its test exist there.
     #[cfg(not(windows))]
-    fn only_returns_alive_pids() {
-        let inspector =
-            PsProcessInspector::new(Arc::new(FakeRunner("    1 Thu Oct 15 08:00:00 2026\n")));
-        let alive = inspector.inspect(&[1, 2]);
-        assert_eq!(alive.len(), 1);
-        assert_eq!(alive[&1].start.as_deref(), Some("Thu Oct 15 08:00:00 2026"));
+    mod with_ps {
+        use super::*;
+        use crate::services::CommandOutput;
+        use std::io;
+
+        struct FakeRunner(&'static str);
+        impl CommandRunner for FakeRunner {
+            fn run(&self, program: &str, args: &[&str]) -> io::Result<CommandOutput> {
+                assert_eq!(program, "env");
+                assert_eq!(args[..2], ["TZ=UTC", "ps"]);
+                assert_eq!(args.last(), Some(&"1,2"));
+                Ok(CommandOutput {
+                    success: false,
+                    stdout: self.0.into(),
+                    stderr: String::new(),
+                })
+            }
+        }
+
+        #[test]
+        fn only_returns_alive_pids() {
+            let inspector =
+                PsProcessInspector::new(Arc::new(FakeRunner("    1 Thu Oct 15 08:00:00 2026\n")));
+            let alive = inspector.inspect(&[1, 2]);
+            assert_eq!(alive.len(), 1);
+            assert_eq!(alive[&1].start.as_deref(), Some("Thu Oct 15 08:00:00 2026"));
+        }
     }
 }
