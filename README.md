@@ -67,6 +67,15 @@ On first launch, click **Install** in the panel banner: it registers `cerebro-ho
 `~/.claude/settings.json` (a backup is written next to it). Without hooks, sessions still show
 up, but subagents and the *waiting* status don't.
 
+## CI and releases
+
+- **CI** (`.github/workflows/ci.yml`) runs on every pull request, on `main`, and on demand from the
+  Actions tab: rustfmt, Clippy and `cargo test` on macOS, Linux and Windows, plus the UI checks.
+- **Release** (`.github/workflows/release.yml`): bump the version in `package.json`,
+  `src-tauri/tauri.conf.json` and `Cargo.toml`, then push a tag `vX.Y.Z`. Installers for macOS
+  (Apple Silicon and Intel), Linux and Windows are attached to a GitHub release. Run it by hand to
+  get a draft release instead. Builds are not code-signed: macOS asks for a right-click > Open.
+
 ## Project layout
 
 ```
