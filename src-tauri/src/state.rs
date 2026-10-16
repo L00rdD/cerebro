@@ -27,17 +27,28 @@ impl AppState {
 
     /// Stores `snapshot`; returns `true` when its content differs from the previous one.
     pub fn replace_snapshot(&self, snapshot: Snapshot) -> bool {
-        let mut last = self.last_snapshot.lock().unwrap_or_else(PoisonError::into_inner);
-        let changed = last.as_ref().is_none_or(|previous| !previous.same_content(&snapshot));
+        let mut last = self
+            .last_snapshot
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        let changed = last
+            .as_ref()
+            .is_none_or(|previous| !previous.same_content(&snapshot));
         *last = Some(snapshot);
         changed
     }
 
     pub fn snapshot(&self) -> Option<Snapshot> {
-        self.last_snapshot.lock().unwrap_or_else(PoisonError::into_inner).clone()
+        self.last_snapshot
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
     }
 
     pub fn scene(&self, session_id: &str) -> Option<Scene> {
-        self.snapshot()?.scenes.into_iter().find(|s| s.session.id.as_str() == session_id)
+        self.snapshot()?
+            .scenes
+            .into_iter()
+            .find(|s| s.session.id.as_str() == session_id)
     }
 }

@@ -138,9 +138,18 @@ mod tests {
         let (_dir, paths) = setup();
         let ev = |name: &str| json!({"hook_event_name": name, "session_id": "s1", "cwd": "/w"});
 
-        assert_eq!(run(&paths, &ev("SessionStart"), 1), Outcome::SessionUpdated(HookStatus::Idle));
-        assert_eq!(run(&paths, &ev("UserPromptSubmit"), 2), Outcome::SessionUpdated(HookStatus::Busy));
-        assert_eq!(run(&paths, &ev("PostToolUse"), 3), Outcome::SessionUnchanged);
+        assert_eq!(
+            run(&paths, &ev("SessionStart"), 1),
+            Outcome::SessionUpdated(HookStatus::Idle)
+        );
+        assert_eq!(
+            run(&paths, &ev("UserPromptSubmit"), 2),
+            Outcome::SessionUpdated(HookStatus::Busy)
+        );
+        assert_eq!(
+            run(&paths, &ev("PostToolUse"), 3),
+            Outcome::SessionUnchanged
+        );
 
         let record: HookSession = read_json(&paths.hook_session_file("s1")).unwrap();
         assert_eq!((record.started_at_ms, record.status_since_ms), (1, 2));
@@ -158,7 +167,10 @@ mod tests {
 
         let perm = json!({"hook_event_name": "Notification", "session_id": "s1",
                           "message": "Claude needs your permission to use Bash"});
-        assert_eq!(run(&paths, &perm, 2), Outcome::SessionUpdated(HookStatus::Waiting));
+        assert_eq!(
+            run(&paths, &perm, 2),
+            Outcome::SessionUpdated(HookStatus::Waiting)
+        );
     }
 
     #[test]
@@ -187,8 +199,18 @@ mod tests {
     #[test]
     fn unknown_events_and_garbage_are_harmless() {
         let (_dir, paths) = setup();
-        assert_eq!(run(&paths, &json!({"hook_event_name": "PreCompact", "session_id": "s"}), 1), Outcome::Ignored);
-        assert_eq!(run(&paths, &json!({"hook_event_name": "Stop"}), 1), Outcome::Ignored);
+        assert_eq!(
+            run(
+                &paths,
+                &json!({"hook_event_name": "PreCompact", "session_id": "s"}),
+                1
+            ),
+            Outcome::Ignored
+        );
+        assert_eq!(
+            run(&paths, &json!({"hook_event_name": "Stop"}), 1),
+            Outcome::Ignored
+        );
         assert!(handle("not json", &paths, 1).is_err());
     }
 }

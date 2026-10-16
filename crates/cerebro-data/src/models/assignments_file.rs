@@ -15,8 +15,16 @@ impl From<&Assignments> for AssignmentsFile {
     fn from(a: &Assignments) -> Self {
         Self {
             version: 1,
-            rooms: a.rooms.iter().map(|(s, r)| (s.to_string(), r.to_string())).collect(),
-            characters: a.characters.iter().map(|(k, c)| (k.encode(), c.to_string())).collect(),
+            rooms: a
+                .rooms
+                .iter()
+                .map(|(s, r)| (s.to_string(), r.to_string()))
+                .collect(),
+            characters: a
+                .characters
+                .iter()
+                .map(|(k, c)| (k.encode(), c.to_string()))
+                .collect(),
         }
     }
 }
@@ -24,7 +32,11 @@ impl From<&Assignments> for AssignmentsFile {
 impl From<AssignmentsFile> for Assignments {
     fn from(file: AssignmentsFile) -> Self {
         Self {
-            rooms: file.rooms.into_iter().map(|(s, r)| (SessionId::new(s), RoomId::new(r))).collect(),
+            rooms: file
+                .rooms
+                .into_iter()
+                .map(|(s, r)| (SessionId::new(s), RoomId::new(r)))
+                .collect(),
             characters: file
                 .characters
                 .into_iter()

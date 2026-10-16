@@ -24,8 +24,12 @@ impl HookAgentSource {
 
 impl AgentSource for HookAgentSource {
     fn agents_of(&self, session: &SessionId) -> Vec<Agent> {
-        let Some(id) = sanitize_id(session.as_str()) else { return Vec::new() };
-        let Ok(entries) = fs::read_dir(self.paths.session_agents_dir(&id)) else { return Vec::new() };
+        let Some(id) = sanitize_id(session.as_str()) else {
+            return Vec::new();
+        };
+        let Ok(entries) = fs::read_dir(self.paths.session_agents_dir(&id)) else {
+            return Vec::new();
+        };
         let now = now_ms();
         let mut agents: Vec<Agent> = entries
             .filter_map(Result::ok)
@@ -37,12 +41,18 @@ impl AgentSource for HookAgentSource {
                 started_at: Timestamp(record.started_at_ms),
             })
             .collect();
-        agents.sort_by(|a, b| a.started_at.cmp(&b.started_at).then_with(|| a.id.cmp(&b.id)));
+        agents.sort_by(|a, b| {
+            a.started_at
+                .cmp(&b.started_at)
+                .then_with(|| a.id.cmp(&b.id))
+        });
         agents
     }
 
     fn forget_all_except(&self, alive: &[SessionId]) {
-        let Ok(entries) = fs::read_dir(self.paths.agents_dir()) else { return };
+        let Ok(entries) = fs::read_dir(self.paths.agents_dir()) else {
+            return;
+        };
         for entry in entries.filter_map(Result::ok) {
             let name = entry.file_name().to_string_lossy().into_owned();
             if alive.iter().any(|id| id.as_str() == name) {
@@ -71,7 +81,12 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = Paths::new(dir.path());
         for (id, kind, at) in [("b", "Plan", now_ms()), ("a", "Explore", now_ms() - 5000)] {
-            let agent = HookAgent { version: FORMAT_VERSION, agent_id: id.into(), agent_type: kind.into(), started_at_ms: at };
+            let agent = HookAgent {
+                version: FORMAT_VERSION,
+                agent_id: id.into(),
+                agent_type: kind.into(),
+                started_at_ms: at,
+            };
             write_json_atomic(&paths.agent_file("s1", id), &agent).unwrap();
         }
         let agents = HookAgentSource::new(paths).agents_of(&SessionId::new("s1"));

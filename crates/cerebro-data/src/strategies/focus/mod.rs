@@ -35,10 +35,16 @@ pub struct MacFocuser {
 impl MacFocuser {
     /// EXERCISE 6 adds `TerminalAppTabSelector` to this list.
     pub fn new(runner: Arc<dyn CommandRunner>) -> Self {
-        Self { runner, selectors: vec![Box::new(ITermTabSelector)] }
+        Self {
+            runner,
+            selectors: vec![Box::new(ITermTabSelector)],
+        }
     }
 
-    pub fn with_selectors(runner: Arc<dyn CommandRunner>, selectors: Vec<Box<dyn TabSelector>>) -> Self {
+    pub fn with_selectors(
+        runner: Arc<dyn CommandRunner>,
+        selectors: Vec<Box<dyn TabSelector>>,
+    ) -> Self {
         Self { runner, selectors }
     }
 
@@ -47,7 +53,11 @@ impl MacFocuser {
             .runner
             .run("open", &["-a", &host.bundle_path])
             .map_err(|e| DomainError::Platform(e.to_string()))?;
-        if output.success { Ok(()) } else { Err(DomainError::Platform(output.stderr)) }
+        if output.success {
+            Ok(())
+        } else {
+            Err(DomainError::Platform(output.stderr))
+        }
     }
 }
 
@@ -59,10 +69,10 @@ impl TerminalFocuser for MacFocuser {
         if let (Some(selector), Some(tty)) = (
             self.selectors.iter().find(|s| s.handles(&host.bundle_path)),
             tty_of(self.runner.as_ref(), target.pid),
-        )
-            && selector.select(self.runner.as_ref(), &tty)? {
-                return Ok(FocusOutcome::Tab { app: host.name });
-            }
+        ) && selector.select(self.runner.as_ref(), &tty)?
+        {
+            return Ok(FocusOutcome::Tab { app: host.name });
+        }
         self.activate(&host)?;
         Ok(FocusOutcome::App { app: host.name })
     }
@@ -110,10 +120,21 @@ pub(crate) mod fake {
 
     impl CommandRunner for ScriptedRunner {
         fn run(&self, program: &str, args: &[&str]) -> io::Result<CommandOutput> {
-            let key = std::iter::once(program).chain(args.iter().copied()).collect::<Vec<_>>().join(" ");
+            let key = std::iter::once(program)
+                .chain(args.iter().copied())
+                .collect::<Vec<_>>()
+                .join(" ");
             self.calls.lock().unwrap().push(key.clone());
-            let stdout = self.answers.iter().find(|(k, _)| key.starts_with(k.as_str())).map(|(_, v)| v.clone());
-            Ok(CommandOutput { success: true, stdout: stdout.unwrap_or_default(), stderr: String::new() })
+            let stdout = self
+                .answers
+                .iter()
+                .find(|(k, _)| key.starts_with(k.as_str()))
+                .map(|(_, v)| v.clone());
+            Ok(CommandOutput {
+                success: true,
+                stdout: stdout.unwrap_or_default(),
+                stderr: String::new(),
+            })
         }
     }
 }
@@ -125,21 +146,35 @@ mod tests {
 
     fn tree() -> ScriptedRunner {
         ScriptedRunner::default()
-            .answer("ps -o ppid=,comm= -p 300", "  200 /Users/me/.local/bin/claude\n")
+            .answer(
+                "ps -o ppid=,comm= -p 300",
+                "  200 /Users/me/.local/bin/claude\n",
+            )
             .answer("ps -o ppid=,comm= -p 200", "  100 -zsh\n")
-            .answer("ps -o ppid=,comm= -p 100", "    1 /Applications/iTerm.app/Contents/MacOS/iTerm2\n")
+            .answer(
+                "ps -o ppid=,comm= -p 100",
+                "    1 /Applications/iTerm.app/Contents/MacOS/iTerm2\n",
+            )
             .answer("ps -o tty= -p 300", "ttys003\n")
     }
 
     fn target() -> FocusTarget {
-        FocusTarget { pid: 300, cwd: "/w".into() }
+        FocusTarget {
+            pid: 300,
+            cwd: "/w".into(),
+        }
     }
 
     #[test]
     fn selects_the_iterm_tab_by_tty() {
         let runner = Arc::new(tree().answer("osascript", "found\n"));
         let outcome = MacFocuser::new(runner.clone()).focus(&target()).unwrap();
-        assert_eq!(outcome, FocusOutcome::Tab { app: "iTerm".into() });
+        assert_eq!(
+            outcome,
+            FocusOutcome::Tab {
+                app: "iTerm".into()
+            }
+        );
         let calls = runner.calls.lock().unwrap();
         assert!(calls.iter().any(|c| c.contains("/dev/ttys003")));
     }
@@ -148,13 +183,30 @@ mod tests {
     fn activates_the_app_when_no_tab_matches() {
         let runner = Arc::new(tree().answer("osascript", "missing\n"));
         let outcome = MacFocuser::new(runner.clone()).focus(&target()).unwrap();
-        assert_eq!(outcome, FocusOutcome::App { app: "iTerm".into() });
-        assert!(runner.calls.lock().unwrap().iter().any(|c| c == "open -a /Applications/iTerm.app"));
+        assert_eq!(
+            outcome,
+            FocusOutcome::App {
+                app: "iTerm".into()
+            }
+        );
+        assert!(
+            runner
+                .calls
+                .lock()
+                .unwrap()
+                .iter()
+                .any(|c| c == "open -a /Applications/iTerm.app")
+        );
     }
 
     #[test]
     fn unknown_host_is_not_found() {
-        let runner = Arc::new(ScriptedRunner::default().answer("ps -o ppid=,comm= -p 300", "    1 /usr/bin/tmux\n"));
-        assert_eq!(MacFocuser::new(runner).focus(&target()).unwrap(), FocusOutcome::NotFound);
+        let runner = Arc::new(
+            ScriptedRunner::default().answer("ps -o ppid=,comm= -p 300", "    1 /usr/bin/tmux\n"),
+        );
+        assert_eq!(
+            MacFocuser::new(runner).focus(&target()).unwrap(),
+            FocusOutcome::NotFound
+        );
     }
 }

@@ -61,7 +61,10 @@ pub fn hide(app: &AppHandle) {
         return;
     }
     let _ = panel.hide();
-    *app.state::<AppState>().last_hidden.lock().unwrap_or_else(PoisonError::into_inner) = Some(Instant::now());
+    *app.state::<AppState>()
+        .last_hidden
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner) = Some(Instant::now());
     set_visible(app, false);
 }
 
@@ -75,6 +78,8 @@ pub fn resize(app: &AppHandle, height: f64) {
 }
 
 fn set_visible(app: &AppHandle, visible: bool) {
-    app.state::<AppState>().panel_visible.store(visible, Ordering::Relaxed);
+    app.state::<AppState>()
+        .panel_visible
+        .store(visible, Ordering::Relaxed);
     let _ = app.emit("panel-visibility", visible);
 }

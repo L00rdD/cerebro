@@ -21,7 +21,9 @@ impl JsonAssignmentStore {
 impl AssignmentStore for JsonAssignmentStore {
     fn load(&self) -> Assignments {
         // A missing or corrupted file just means "no memory yet".
-        read_json::<AssignmentsFile>(&self.file).map(Assignments::from).unwrap_or_default()
+        read_json::<AssignmentsFile>(&self.file)
+            .map(Assignments::from)
+            .unwrap_or_default()
     }
 
     fn save(&self, assignments: &Assignments) -> Result<(), DomainError> {
@@ -43,7 +45,10 @@ mod tests {
 
         let mut a = Assignments::default();
         a.rooms.insert(SessionId::new("s"), RoomId::new("garage"));
-        a.characters.insert(ActorKey::Lead(SessionId::new("s")), CharacterId::new("doop"));
+        a.characters.insert(
+            ActorKey::Lead(SessionId::new("s")),
+            CharacterId::new("doop"),
+        );
         store.save(&a).unwrap();
         assert_eq!(store.load(), a);
     }
