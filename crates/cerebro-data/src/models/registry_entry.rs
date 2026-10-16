@@ -45,5 +45,8 @@ impl From<RegistryEntry> for ObservedSession {
 }
 
 pub(crate) fn folder_name_of(path: &Path) -> String {
-    path.file_name().map_or_else(|| path.display().to_string(), |n| n.to_string_lossy().into_owned())
+    path.file_name().map_or_else(
+        || path.display().to_string(),
+        |n| n.to_string_lossy().into_owned(),
+    )
 }

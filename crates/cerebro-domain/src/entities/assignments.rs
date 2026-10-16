@@ -42,7 +42,10 @@ mod tests {
 
     #[test]
     fn actor_key_round_trips() {
-        for key in [ActorKey::Lead(SessionId::new("s")), ActorKey::Agent(AgentId::new("a"))] {
+        for key in [
+            ActorKey::Lead(SessionId::new("s")),
+            ActorKey::Agent(AgentId::new("a")),
+        ] {
             assert_eq!(ActorKey::decode(&key.encode()), Some(key));
         }
         assert_eq!(ActorKey::decode("nope"), None);

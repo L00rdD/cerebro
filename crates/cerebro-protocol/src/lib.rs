@@ -105,7 +105,8 @@ impl Paths {
     }
 
     pub fn agent_file(&self, session_id: &str, agent_id: &str) -> PathBuf {
-        self.session_agents_dir(session_id).join(format!("{agent_id}.json"))
+        self.session_agents_dir(session_id)
+            .join(format!("{agent_id}.json"))
     }
 
     pub fn assignments_file(&self) -> PathBuf {
@@ -159,7 +160,10 @@ mod tests {
 
     #[test]
     fn sanitize_id_strips_path_tricks() {
-        assert_eq!(sanitize_id("../../etc/passwd").as_deref(), Some("etcpasswd"));
+        assert_eq!(
+            sanitize_id("../../etc/passwd").as_deref(),
+            Some("etcpasswd")
+        );
         assert_eq!(sanitize_id("abc-123_DEF").as_deref(), Some("abc-123_DEF"));
         assert_eq!(sanitize_id("../"), None);
     }
@@ -181,6 +185,9 @@ mod tests {
 
     #[test]
     fn status_uses_snake_case_on_disk() {
-        assert_eq!(serde_json::to_string(&HookStatus::Waiting).unwrap(), "\"waiting\"");
+        assert_eq!(
+            serde_json::to_string(&HookStatus::Waiting).unwrap(),
+            "\"waiting\""
+        );
     }
 }

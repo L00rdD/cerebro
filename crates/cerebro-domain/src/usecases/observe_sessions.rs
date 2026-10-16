@@ -2,8 +2,12 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError};
 
 use crate::DomainError;
-use crate::entities::{Assignments, Catalog, DataMode, Scene, Session, SessionId, SessionStatus, Snapshot};
-use crate::ports::{AgentSource, AssignmentStore, Clock, ObservedSession, ProcessInspector, SessionSource};
+use crate::entities::{
+    Assignments, Catalog, DataMode, Scene, Session, SessionId, SessionStatus, Snapshot,
+};
+use crate::ports::{
+    AgentSource, AssignmentStore, Clock, ObservedSession, ProcessInspector, SessionSource,
+};
 use crate::strategies::cast_all;
 
 /// Hook activity this recent, with an empty registry, means the registry is broken.
@@ -38,14 +42,21 @@ impl ObserveSessions {
         let hook_sessions = self.deps.hooks.observe().unwrap_or_default();
 
         let (mut sessions, mode) = match self.deps.registry.observe() {
-            Err(error) => (strip(hook_sessions), DataMode::HooksFallback { reason: error.to_string() }),
+            Err(error) => (
+                strip(hook_sessions),
+                DataMode::HooksFallback {
+                    reason: error.to_string(),
+                },
+            ),
             Ok(registry) => {
                 let live = self.verified(registry);
                 let recent_hook_activity = hook_sessions
                     .iter()
                     .any(|h| now.since(h.session.status_since) < FALLBACK_ACTIVITY_WINDOW_MS);
                 if live.is_empty() && recent_hook_activity {
-                    let reason = "Claude Code's session registry is empty while hooks report activity".into();
+                    let reason =
+                        "Claude Code's session registry is empty while hooks report activity"
+                            .into();
                     (strip(hook_sessions), DataMode::HooksFallback { reason })
                 } else {
                     (overlay_waiting(live, &hook_sessions), DataMode::Registry)
@@ -60,9 +71,16 @@ impl ObserveSessions {
         self.deps.agents.forget_all_except(&alive);
 
         // Launch order keeps cards in place when a session changes status.
-        sessions.sort_by(|a, b| a.started_at.cmp(&b.started_at).then_with(|| a.id.cmp(&b.id)));
+        sessions.sort_by(|a, b| {
+            a.started_at
+                .cmp(&b.started_at)
+                .then_with(|| a.id.cmp(&b.id))
+        });
 
-        let mut assignments = self.assignments.lock().unwrap_or_else(PoisonError::into_inner);
+        let mut assignments = self
+            .assignments
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
         let (casts, changed) = cast_all(&self.deps.catalog, &mut assignments, &sessions);
         if changed {
             // Not fatal: picks stay stable in memory even if the file can't be written.
@@ -74,7 +92,11 @@ impl ObserveSessions {
             .zip(casts)
             .map(|(session, cast)| Scene { session, cast })
             .collect();
-        Ok(Snapshot { scenes, mode, taken_at: now })
+        Ok(Snapshot {
+            scenes,
+            mode,
+            taken_at: now,
+        })
     }
 
     /// Keeps registry sessions whose process is alive and is still the same process
@@ -85,8 +107,12 @@ impl ObserveSessions {
         registry
             .into_iter()
             .filter(|observed| {
-                let Some(pid) = observed.session.pid else { return false };
-                let Some(info) = processes.get(&pid) else { return false };
+                let Some(pid) = observed.session.pid else {
+                    return false;
+                };
+                let Some(info) = processes.get(&pid) else {
+                    return false;
+                };
                 match (&observed.process_start, &info.start) {
                     (Some(recorded), Some(actual)) => same_start(recorded, actual),
                     _ => true,
@@ -103,13 +129,16 @@ fn strip(observed: Vec<ObservedSession>) -> Vec<Session> {
 
 /// The registry doesn't know about permission prompts; the hooks do.
 fn overlay_waiting(mut sessions: Vec<Session>, hooks: &[ObservedSession]) -> Vec<Session> {
-    let by_id: HashMap<&SessionId, &Session> = hooks.iter().map(|h| (&h.session.id, &h.session)).collect();
+    let by_id: HashMap<&SessionId, &Session> =
+        hooks.iter().map(|h| (&h.session.id, &h.session)).collect();
     for session in &mut sessions {
         if let Some(hook) = by_id.get(&session.id)
-            && hook.status == SessionStatus::Waiting && hook.status_since >= session.status_since {
-                session.status = SessionStatus::Waiting;
-                session.status_since = hook.status_since;
-            }
+            && hook.status == SessionStatus::Waiting
+            && hook.status_since >= session.status_since
+        {
+            session.status = SessionStatus::Waiting;
+            session.status_since = hook.status_since;
+        }
     }
     sessions
 }
@@ -136,7 +165,11 @@ mod tests {
     struct FakeAgents(Vec<(SessionId, Agent)>);
     impl AgentSource for FakeAgents {
         fn agents_of(&self, session: &SessionId) -> Vec<Agent> {
-            self.0.iter().filter(|(s, _)| s == session).map(|(_, a)| a.clone()).collect()
+            self.0
+                .iter()
+                .filter(|(s, _)| s == session)
+                .map(|(_, a)| a.clone())
+                .collect()
         }
         fn forget_all_except(&self, _alive: &[SessionId]) {}
     }
@@ -167,7 +200,13 @@ mod tests {
         }
     }
 
-    fn observed(id: &str, pid: Option<u32>, start: Option<&str>, status: SessionStatus, since: u64) -> ObservedSession {
+    fn observed(
+        id: &str,
+        pid: Option<u32>,
+        start: Option<&str>,
+        status: SessionStatus,
+        since: u64,
+    ) -> ObservedSession {
         ObservedSession {
             session: Session {
                 id: SessionId::new(id),
@@ -177,7 +216,11 @@ mod tests {
                 status,
                 started_at: Timestamp(since),
                 status_since: Timestamp(since),
-                origin: if pid.is_some() { Origin::Registry } else { Origin::Hooks },
+                origin: if pid.is_some() {
+                    Origin::Registry
+                } else {
+                    Origin::Hooks
+                },
                 agents: vec![],
             },
             process_start: start.map(Into::into),
@@ -185,7 +228,19 @@ mod tests {
     }
 
     fn alive(entries: &[(u32, Option<&str>)]) -> FakeProcesses {
-        FakeProcesses(entries.iter().map(|(p, s)| (*p, ProcessInfo { start: s.map(Into::into) })).collect())
+        FakeProcesses(
+            entries
+                .iter()
+                .map(|(p, s)| {
+                    (
+                        *p,
+                        ProcessInfo {
+                            start: s.map(Into::into),
+                        },
+                    )
+                })
+                .collect(),
+        )
     }
 
     fn use_case(
@@ -212,7 +267,11 @@ mod tests {
 
     #[test]
     fn keeps_live_sessions_and_attaches_agents() {
-        let agent = Agent { id: AgentId::new("a1"), kind: "Explore".into(), started_at: Timestamp(1) };
+        let agent = Agent {
+            id: AgentId::new("a1"),
+            kind: "Explore".into(),
+            started_at: Timestamp(1),
+        };
         let snapshot = use_case(
             Ok(vec![observed("s1", Some(10), None, SessionStatus::Busy, 1)]),
             vec![],
@@ -232,17 +291,36 @@ mod tests {
         let snapshot = use_case(
             Ok(vec![
                 observed("dead", Some(1), None, SessionStatus::Idle, 1),
-                observed("recycled", Some(2), Some("Thu Oct 15 08:43:57 2026"), SessionStatus::Idle, 1),
-                observed("same", Some(3), Some("Thu Oct 15  9:00:00 2026"), SessionStatus::Idle, 1),
+                observed(
+                    "recycled",
+                    Some(2),
+                    Some("Thu Oct 15 08:43:57 2026"),
+                    SessionStatus::Idle,
+                    1,
+                ),
+                observed(
+                    "same",
+                    Some(3),
+                    Some("Thu Oct 15  9:00:00 2026"),
+                    SessionStatus::Idle,
+                    1,
+                ),
             ]),
             vec![],
-            alive(&[(2, Some("Fri Oct 16 10:00:00 2026")), (3, Some("Thu Oct 15 9:00:00 2026"))]),
+            alive(&[
+                (2, Some("Fri Oct 16 10:00:00 2026")),
+                (3, Some("Thu Oct 15 9:00:00 2026")),
+            ]),
             FakeAgents(vec![]),
             100,
         )
         .execute()
         .unwrap();
-        let ids: Vec<_> = snapshot.scenes.iter().map(|s| s.session.id.as_str()).collect();
+        let ids: Vec<_> = snapshot
+            .scenes
+            .iter()
+            .map(|s| s.session.id.as_str())
+            .collect();
         assert_eq!(ids, ["same"]);
     }
 
@@ -278,13 +356,27 @@ mod tests {
     #[test]
     fn falls_back_when_registry_is_empty_but_hooks_are_active() {
         let now = 10 * 60 * 1000;
-        let recent = use_case(Ok(vec![]), vec![observed("h1", None, None, SessionStatus::Busy, now - 1000)],
-            alive(&[]), FakeAgents(vec![]), now).execute().unwrap();
+        let recent = use_case(
+            Ok(vec![]),
+            vec![observed("h1", None, None, SessionStatus::Busy, now - 1000)],
+            alive(&[]),
+            FakeAgents(vec![]),
+            now,
+        )
+        .execute()
+        .unwrap();
         assert!(matches!(recent.mode, DataMode::HooksFallback { .. }));
 
         // Stale hook records (e.g. a crashed session) must not trigger the fallback.
-        let stale = use_case(Ok(vec![]), vec![observed("h1", None, None, SessionStatus::Busy, 0)],
-            alive(&[]), FakeAgents(vec![]), now).execute().unwrap();
+        let stale = use_case(
+            Ok(vec![]),
+            vec![observed("h1", None, None, SessionStatus::Busy, 0)],
+            alive(&[]),
+            FakeAgents(vec![]),
+            now,
+        )
+        .execute()
+        .unwrap();
         assert_eq!(stale.mode, DataMode::Registry);
         assert_eq!(stale.scenes, []);
     }
@@ -303,7 +395,11 @@ mod tests {
         )
         .execute()
         .unwrap();
-        let ids: Vec<_> = snapshot.scenes.iter().map(|s| s.session.id.as_str()).collect();
+        let ids: Vec<_> = snapshot
+            .scenes
+            .iter()
+            .map(|s| s.session.id.as_str())
+            .collect();
         assert_eq!(ids, ["early", "late"]);
     }
 }

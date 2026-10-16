@@ -60,7 +60,9 @@ impl From<&Snapshot> for SnapshotDto {
             scenes: snapshot.scenes.iter().map(SceneDto::from).collect(),
             mode: match &snapshot.mode {
                 DataMode::Registry => ModeDto::Registry,
-                DataMode::HooksFallback { reason } => ModeDto::HooksFallback { reason: reason.clone() },
+                DataMode::HooksFallback { reason } => ModeDto::HooksFallback {
+                    reason: reason.clone(),
+                },
             },
             counts: CountsDto {
                 sessions: snapshot.scenes.len(),
@@ -81,11 +83,15 @@ impl From<&Scene> for SceneDto {
             character: scene.cast.lead.to_string(),
             agent_kind: None,
         };
-        let agents = session.agents.iter().zip(&scene.cast.agents).map(|(agent, character)| ActorDto {
-            id: format!("agent:{}", agent.id),
-            character: character.to_string(),
-            agent_kind: Some(agent.kind.clone()),
-        });
+        let agents = session
+            .agents
+            .iter()
+            .zip(&scene.cast.agents)
+            .map(|(agent, character)| ActorDto {
+                id: format!("agent:{}", agent.id),
+                character: character.to_string(),
+                agent_kind: Some(agent.kind.clone()),
+            });
         Self {
             id: session.id.to_string(),
             name: session.name.clone(),

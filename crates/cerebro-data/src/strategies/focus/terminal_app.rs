@@ -36,7 +36,11 @@ mod tests {
     #[ignore = "exercise 6"]
     fn runs_an_applescript_mentioning_the_tty() {
         let runner = ScriptedRunner::default().answer("osascript", "found\n");
-        assert!(TerminalAppTabSelector.select(&runner, "/dev/ttys007").unwrap());
+        assert!(
+            TerminalAppTabSelector
+                .select(&runner, "/dev/ttys007")
+                .unwrap()
+        );
         let calls = runner.calls.lock().unwrap();
         assert!(calls[0].contains("Terminal") && calls[0].contains("/dev/ttys007"));
     }
@@ -45,6 +49,10 @@ mod tests {
     #[ignore = "exercise 6"]
     fn reports_a_missing_tab() {
         let runner = ScriptedRunner::default().answer("osascript", "missing\n");
-        assert!(!TerminalAppTabSelector.select(&runner, "/dev/ttys007").unwrap());
+        assert!(
+            !TerminalAppTabSelector
+                .select(&runner, "/dev/ttys007")
+                .unwrap()
+        );
     }
 }

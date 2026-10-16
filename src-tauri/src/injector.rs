@@ -5,7 +5,9 @@ use std::sync::Arc;
 
 use cerebro_data::datasources::{ClaudeRegistrySource, HookAgentSource, HookSessionSource};
 use cerebro_data::repositories::{EmbeddedCatalog, JsonAssignmentStore};
-use cerebro_data::services::{ClaudeSettingsHookInstaller, PsProcessInspector, SystemClock, SystemCommandRunner};
+use cerebro_data::services::{
+    ClaudeSettingsHookInstaller, PsProcessInspector, SystemClock, SystemCommandRunner,
+};
 use cerebro_data::strategies::focus::platform_focuser;
 use cerebro_domain::DomainError;
 use cerebro_domain::ports::CatalogSource;
@@ -19,7 +21,8 @@ pub struct Container {
 }
 
 pub fn build() -> Result<Container, DomainError> {
-    let paths = Paths::detect().ok_or_else(|| DomainError::Platform("cannot find the home directory".into()))?;
+    let paths = Paths::detect()
+        .ok_or_else(|| DomainError::Platform("cannot find the home directory".into()))?;
     let runner = Arc::new(SystemCommandRunner);
 
     let observe = ObserveSessions::new(ObserveSessionsDeps {
@@ -45,7 +48,11 @@ pub fn build() -> Result<Container, DomainError> {
 /// The hook ships as a sidecar next to the app executable
 /// (`Cerebro.app/Contents/MacOS/cerebro-hook` once bundled, `target/<profile>/` in dev).
 fn hook_binary_path() -> PathBuf {
-    let name = if cfg!(windows) { "cerebro-hook.exe" } else { "cerebro-hook" };
+    let name = if cfg!(windows) {
+        "cerebro-hook.exe"
+    } else {
+        "cerebro-hook"
+    };
     std::env::current_exe()
         .ok()
         .and_then(|exe| exe.parent().map(|dir| dir.join(name)))
