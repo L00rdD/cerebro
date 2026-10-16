@@ -61,7 +61,7 @@ npm run install:macos  # macOS: release build, installed to ~/Applications/Cereb
 npm run tauri build    # any OS: release bundle in target/release/bundle
 ```
 
-All Rust commands go through `scripts/with-rust.sh`, which puts a real `cargo` first in `PATH`.
+The npm scripts run Rust commands through `scripts/with-rust.sh`, which puts a real `cargo` first in `PATH`.
 
 On first launch, click **Install** in the panel banner: it registers `cerebro-hook` in
 `~/.claude/settings.json` (a backup is written next to it). Without hooks, sessions still show
