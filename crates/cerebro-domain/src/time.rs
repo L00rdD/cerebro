@@ -15,11 +15,19 @@ impl Timestamp {
     }
 }
 
-/// EXERCISE 1 (see `EXERCISES.md`): format an elapsed time for the session cards.
-///
-/// Expected output: `"42s"`, `"9min"`, `"2h05"`, `"3d"`.
+/// Formats an elapsed time for the session cards: `"42s"`, `"9min"`, `"2h05"`, `"3d"`.
 pub fn humanize_duration(elapsed_ms: u64) -> String {
-    todo!("Exercise 1: format {elapsed_ms} ms as a short human duration")
+    const MINUTE: u64 = 60;
+    const HOUR: u64 = 60 * MINUTE;
+    const DAY: u64 = 24 * HOUR;
+
+    let seconds = elapsed_ms / 1_000;
+    match seconds {
+        0..MINUTE => format!("{seconds}s"),
+        MINUTE..HOUR => format!("{}min", seconds / MINUTE),
+        HOUR..DAY => format!("{}h{:02}", seconds / HOUR, (seconds % HOUR) / MINUTE),
+        _ => format!("{}d", seconds / DAY),
+    }
 }
 
 #[cfg(test)]
@@ -33,28 +41,24 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "exercise 1"]
     fn humanize_seconds() {
         assert_eq!(humanize_duration(0), "0s");
         assert_eq!(humanize_duration(42_999), "42s");
     }
 
     #[test]
-    #[ignore = "exercise 1"]
     fn humanize_minutes() {
         assert_eq!(humanize_duration(60_000), "1min");
         assert_eq!(humanize_duration(59 * 60_000 + 59_000), "59min");
     }
 
     #[test]
-    #[ignore = "exercise 1"]
     fn humanize_hours_pad_minutes() {
         assert_eq!(humanize_duration(3_600_000), "1h00");
         assert_eq!(humanize_duration(2 * 3_600_000 + 5 * 60_000), "2h05");
     }
 
     #[test]
-    #[ignore = "exercise 1"]
     fn humanize_days() {
         assert_eq!(humanize_duration(3 * 24 * 3_600_000 + 1), "3d");
     }
