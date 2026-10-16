@@ -45,7 +45,7 @@ Before starting, read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and run the a
 **Branch**: `features/ex01_humanize_duration`.<br>
 **Goal**: format an elapsed time as `42s`, `9min`, `2h05`, `3d`.<br>
 **Concepts**: functions, integer arithmetic, `if`/`match`, `format!`, `String` vs `&str`, unit tests.<br>
-**Read**: Book ch. 3 (*Common Programming Concepts*), ch. 11.1 (*How to Write Tests*).<br>
+**Read**: Book [ch. 3 (*Common Programming Concepts*)](https://doc.rust-lang.org/book/ch03-00-common-programming-concepts.html), [ch. 11.1 (*How to Write Tests*)](https://doc.rust-lang.org/book/ch11-01-writing-tests.html).<br>
 **Where**: `crates/cerebro-domain/src/time.rs`.
 
 1. Run `cargo test -p cerebro-domain humanize -- --ignored` and read the four failing tests.
@@ -67,7 +67,7 @@ TypeScript twin in `ui/src/lib/format.ts`. Compare both versions.
 **Branch**: `features/ex02_session_display`.<br>
 **Goal**: `session.to_string()` gives `personal-f4  busy  2 agents  ~/personal`.<br>
 **Concepts**: traits, `impl Trait for Type`, `std::fmt::Formatter`, `write!`, pattern matching on enums, pluralization.<br>
-**Read**: Book ch. 6 (*Enums and Pattern Matching*), ch. 10.2 (*Traits*).<br>
+**Read**: Book [ch. 6 (*Enums and Pattern Matching*)](https://doc.rust-lang.org/book/ch06-00-enums.html), [ch. 10.2 (*Traits*)](https://doc.rust-lang.org/book/ch10-02-traits.html).<br>
 **Where**: `crates/cerebro-domain/src/entities/session.rs` (bottom of the file).
 
 `SessionStatus` already has `as_str()`. Use it rather than duplicating the `match`.
@@ -84,7 +84,7 @@ TypeScript twin in `ui/src/lib/format.ts`. Compare both versions.
 **Branch**: `features/ex03_cli`.<br>
 **Goal**: `cargo run -p cerebro-cli -- list` prints the live sessions; `stats` and `hooks` follow.<br>
 **Concepts**: binary crates, workspaces, reusing library crates, `Result` in `main`, `ExitCode`, `Arc<dyn Trait>`.<br>
-**Read**: Book ch. 7 (*Packages, Crates, and Modules*), ch. 12 (*An I/O Project*).<br>
+**Read**: Book [ch. 7 (*Packages, Crates, and Modules*)](https://doc.rust-lang.org/book/ch07-00-managing-growing-projects-with-packages-crates-and-modules.html), [ch. 12 (*An I/O Project*)](https://doc.rust-lang.org/book/ch12-00-an-io-project.html).<br>
 **Where**: `crates/cerebro-cli/src/main.rs`.
 
 1. Build an `ObserveSessions` exactly like `src-tauri/src/injector.rs` does. Wonder why you can
@@ -111,7 +111,7 @@ TypeScript twin in `ui/src/lib/format.ts`. Compare both versions.
 **Branch**: `fix/ex04_registry_scan_errors`.<br>
 **Goal**: the registry scan reports which files were unreadable or malformed instead of ignoring them.<br>
 **Concepts**: `Result`, the `?` operator, custom error enums, `thiserror`, `map_err`, partitioning results.<br>
-**Read**: Book ch. 9 (*Error Handling*); the `thiserror` README.<br>
+**Read**: Book [ch. 9 (*Error Handling*)](https://doc.rust-lang.org/book/ch09-00-error-handling.html); the [`thiserror` docs](https://docs.rs/thiserror).<br>
 **Where**: `crates/cerebro-data/src/datasources/claude_registry.rs` (`scan`, `RegistryScan`, `RegistryProblem`).
 
 1. Implement `scan()`. Files that are not `.json` are *not* problems.
@@ -133,7 +133,7 @@ TypeScript twin in `ui/src/lib/format.ts`. Compare both versions.
 **Branch**: `features/ex05_session_stats`.<br>
 **Goal**: implement `compute_stats` (agents by type, busiest session, longest running agent).<br>
 **Concepts**: iterators and adapters (`flat_map`, `fold`, `max_by_key`, `min_by_key`), closures, `BTreeMap`, `Option` combinators.<br>
-**Read**: Book ch. 13 (*Iterators and Closures*), ch. 8.3 (*Hash Maps*).<br>
+**Read**: Book [ch. 13 (*Iterators and Closures*)](https://doc.rust-lang.org/book/ch13-00-functional-features.html), [ch. 8.3 (*Hash Maps*)](https://doc.rust-lang.org/book/ch08-03-hash-maps.html).<br>
 **Where**: `crates/cerebro-domain/src/entities/stats.rs`.
 
 Rule of the game: no `for` loop and no `let mut`. Then wire it into `cerebro stats`.
@@ -152,7 +152,7 @@ Rule of the game: no `for` loop and no `let mut`. Then wire it into `cerebro sta
 **Branch**: `features/ex06_terminal_app_focus`.<br>
 **Goal**: clicking a card focuses the right tab in macOS Terminal, not only in iTerm2.<br>
 **Concepts**: implementing a trait for a new type, trait objects (`Box<dyn TabSelector>`), testing with fakes, raw strings.<br>
-**Read**: Book ch. 17.2 (*Trait Objects*), ch. 19.3 for raw strings (`r#"…"#`).<br>
+**Read**: Book [ch. 18.2 (*Trait Objects*)](https://doc.rust-lang.org/book/ch18-02-trait-objects.html); the Reference, [*Raw string literals*](https://doc.rust-lang.org/reference/tokens.html#raw-string-literals), for `r#"…"#`.<br>
 **Where**: `crates/cerebro-data/src/strategies/focus/terminal_app.rs`, then register it in `MacFocuser::new` (`focus/mod.rs`).
 
 Read `iterm.rs` first: your selector is its sibling. The tests use `ScriptedRunner`, a fake
@@ -184,7 +184,7 @@ return "missing"
 **Branch**: `refactor/ex07_borrowed_ps_parsing`.<br>
 **Goal**: parse `ps` output without allocating, returning slices of the input.<br>
 **Concepts**: references, lifetimes (`PsLine<'a>`), `&str` slicing, `split_whitespace`, `Iterator::eq`.<br>
-**Read**: Book ch. 4 (*Understanding Ownership*), ch. 10.3 (*Validating References with Lifetimes*).<br>
+**Read**: Book [ch. 4 (*Understanding Ownership*)](https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html), [ch. 10.3 (*Validating References with Lifetimes*)](https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html).<br>
 **Where**: `crates/cerebro-data/src/services/process_inspector.rs` (`PsLine`, `parse_ps_line_borrowed`).
 
 1. Implement `parse_ps_line_borrowed` and `PsLine::started_at`.
@@ -210,7 +210,7 @@ return "missing"
 **Branch**: `refactor/ex08_file_watcher`.<br>
 **Goal**: update the panel as soon as a session or agent file changes, instead of polling every 1-2 s.<br>
 **Concepts**: threads, channels (`std::sync::mpsc`), `Arc<Mutex<_>>`, debouncing, external crates (`notify`).<br>
-**Read**: Book ch. 16 (*Fearless Concurrency*); the `notify` crate docs.<br>
+**Read**: Book [ch. 16 (*Fearless Concurrency*)](https://doc.rust-lang.org/book/ch16-00-concurrency.html); the [`notify` crate docs](https://docs.rs/notify).<br>
 **Where**: `src-tauri/src/poller.rs` (and maybe a new `watcher.rs`).
 
 1. Watch `~/.claude/sessions` and `~/.cerebro` recursively.
@@ -230,7 +230,7 @@ return "missing"
 **Branch**: `features/ex09_config_file`.<br>
 **Goal**: `~/.cerebro/config.toml` with `favorite_characters`, `banned_rooms` and `refresh_seconds`.<br>
 **Concepts**: `serde` derive, `#[serde(default)]`, `Default`, the `toml` crate, validating input, passing config through layers.<br>
-**Read**: Book ch. 5 (*Structs*); serde.rs *Attributes* page.<br>
+**Read**: Book [ch. 5 (*Structs*)](https://doc.rust-lang.org/book/ch05-00-structs.html); serde.rs [*Attributes*](https://serde.rs/attributes.html) page.<br>
 **Where**: a new `Config` in `cerebro-protocol` or `cerebro-data`, consumed by `strategies/casting.rs` and the poller.
 
 Design question first: should casting know about files? (No. Pass it plain data.)
@@ -241,7 +241,7 @@ Write the tests before the code: a missing file means defaults, and an unknown c
 **Branch**: `features/ex10_windows_linux`.<br>
 **Goal**: Cerebro works outside macOS.<br>
 **Concepts**: `#[cfg(target_os = "…")]`, platform crates, conditional dependencies in `Cargo.toml`.<br>
-**Read**: *The Cargo Book*, "Platform specific dependencies"; the `sysinfo` crate.<br>
+**Read**: *The Cargo Book*, ["Platform specific dependencies"](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#platform-specific-dependencies); the [`sysinfo` crate](https://docs.rs/sysinfo).<br>
 **Where**: `services/process_inspector.rs` (the `cfg!(windows)` branch), `strategies/focus/mod.rs` (`platform_focuser`).
 
 1. Real process start times on Windows (`sysinfo`), and check their format against what Claude Code writes there.
@@ -254,6 +254,7 @@ Write the tests before the code: a missing file means defaults, and an unknown c
 **Branch**: `features/ex11_tmux_focus`.<br>
 **Goal**: clicking a session running inside tmux selects the right tmux window and pane, then focuses the terminal.<br>
 **Concepts**: everything above, plus parsing command output robustly.<br>
+**Read**: the [tmux manual](https://man7.org/linux/man-pages/man1/tmux.1.html) (`FORMATS` section).<br>
 **Hint**: `tmux list-panes -a -F '#{pane_tty} #{session_name}:#{window_index}.#{pane_index}'`, then
 `tmux select-window -t …` / `select-pane -t …`; the terminal hosting tmux is the client's: `tmux list-clients -F '#{client_tty} #{client_pid}'`.
 
