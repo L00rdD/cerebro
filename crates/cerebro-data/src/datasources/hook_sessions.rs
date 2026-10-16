@@ -33,7 +33,10 @@ impl SessionSource for HookSessionSource {
             .filter_map(Result::ok)
             .filter_map(|entry| read_json::<HookSession>(&entry.path()).ok())
             .filter(|record| now.saturating_sub(record.status_since_ms) < STALE_AFTER_MS)
-            .map(|record| ObservedSession { session: to_session(record), process_start: None })
+            .map(|record| ObservedSession {
+                session: to_session(record),
+                process_start: None,
+            })
             .collect())
     }
 }
@@ -88,6 +91,9 @@ mod tests {
 
     #[test]
     fn missing_directory_means_no_sessions() {
-        assert_eq!(HookSessionSource::new("/nope").observe().unwrap(), [] as [cerebro_domain::ports::ObservedSession; 0]);
+        assert_eq!(
+            HookSessionSource::new("/nope").observe().unwrap(),
+            [] as [cerebro_domain::ports::ObservedSession; 0]
+        );
     }
 }

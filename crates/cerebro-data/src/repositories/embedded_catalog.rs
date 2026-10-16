@@ -16,7 +16,11 @@ impl CatalogSource for EmbeddedCatalog {
         let characters: CharactersFile = serde_json::from_str(CHARACTERS_JSON).map_err(invalid)?;
         let rooms: RoomsFile = serde_json::from_str(ROOMS_JSON).map_err(invalid)?;
         Catalog::new(
-            characters.characters.into_iter().map(|c| CharacterId::new(c.id)).collect(),
+            characters
+                .characters
+                .into_iter()
+                .map(|c| CharacterId::new(c.id))
+                .collect(),
             rooms.rooms.into_iter().map(|r| RoomId::new(r.id)).collect(),
         )
     }

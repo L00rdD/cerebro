@@ -20,7 +20,10 @@ pub struct Snapshot {
 
 impl Snapshot {
     pub fn character_count(&self) -> usize {
-        self.scenes.iter().map(|s| s.session.character_count()).sum()
+        self.scenes
+            .iter()
+            .map(|s| s.session.character_count())
+            .sum()
     }
 
     pub fn agent_count(&self) -> usize {

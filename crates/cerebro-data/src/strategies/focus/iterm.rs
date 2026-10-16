@@ -35,7 +35,10 @@ return "missing""#
             .run("osascript", &["-e", &script])
             .map_err(|e| DomainError::Platform(e.to_string()))?;
         if !output.success {
-            return Err(DomainError::Platform(format!("iTerm2 AppleScript failed: {}", output.stderr.trim())));
+            return Err(DomainError::Platform(format!(
+                "iTerm2 AppleScript failed: {}",
+                output.stderr.trim()
+            )));
         }
         Ok(output.stdout.trim() == "found")
     }

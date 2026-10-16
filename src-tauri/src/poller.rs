@@ -20,8 +20,15 @@ pub fn start(app: AppHandle) {
         .spawn(move || {
             loop {
                 refresh(&app);
-                let visible = app.state::<AppState>().panel_visible.load(Ordering::Relaxed);
-                thread::sleep(if visible { VISIBLE_INTERVAL } else { HIDDEN_INTERVAL });
+                let visible = app
+                    .state::<AppState>()
+                    .panel_visible
+                    .load(Ordering::Relaxed);
+                thread::sleep(if visible {
+                    VISIBLE_INTERVAL
+                } else {
+                    HIDDEN_INTERVAL
+                });
             }
         })
         .expect("failed to start the poller thread");
