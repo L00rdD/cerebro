@@ -41,13 +41,15 @@ jobs:
           components: rustfmt
       - run: cargo fmt --all --check
 
+  # Day to day (develop) only macOS, the platform Cerebro is developed on. Everything headed for
+  # main, which is what gets released, is checked on all three platforms.
   rust:
     name: Rust (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-22.04, windows-latest]
+        os: ${{ fromJSON((github.base_ref == 'main' || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && '["macos-latest", "ubuntu-22.04", "windows-latest"]' || '["macos-latest"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
