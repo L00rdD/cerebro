@@ -108,7 +108,11 @@ mod tests {
             status_since: Timestamp(0),
             origin: Origin::Registry,
             agents: (0..agents)
-                .map(|i| Agent { id: AgentId::new(format!("a{i}")), kind: "Explore".into(), started_at: Timestamp(0) })
+                .map(|i| Agent {
+                    id: AgentId::new(format!("a{i}")),
+                    kind: "Explore".into(),
+                    started_at: Timestamp(0),
+                })
                 .collect(),
         }
     }
@@ -117,7 +121,10 @@ mod tests {
     #[ignore = "exercise 2"]
     fn status_display() {
         assert_eq!(SessionStatus::Busy.to_string(), "busy");
-        assert_eq!(SessionStatus::Other("compacting".into()).to_string(), "compacting");
+        assert_eq!(
+            SessionStatus::Other("compacting".into()).to_string(),
+            "compacting"
+        );
     }
 
     #[test]
@@ -127,6 +134,9 @@ mod tests {
         assert!(line.contains("personal-f4"), "{line}");
         assert!(line.contains("busy"), "{line}");
         assert!(line.contains("2 agents"), "{line}");
-        assert!(session(1).to_string().contains("1 agent "), "singular, then a space");
+        assert!(
+            session(1).to_string().contains("1 agent "),
+            "singular, then a space"
+        );
     }
 }

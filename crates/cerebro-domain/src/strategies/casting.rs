@@ -12,14 +12,20 @@ use crate::entities::{ActorKey, Assignments, Cast, Catalog, CharacterId, RoomId,
 use crate::rng::pick_free;
 
 /// Returns one `Cast` per session (same order) and whether `assignments` changed.
-pub fn cast_all(catalog: &Catalog, assignments: &mut Assignments, sessions: &[Session]) -> (Vec<Cast>, bool) {
+pub fn cast_all(
+    catalog: &Catalog,
+    assignments: &mut Assignments,
+    sessions: &[Session],
+) -> (Vec<Cast>, bool) {
     let before = assignments.clone();
     forget_dead(assignments, sessions);
 
     let mut order: Vec<usize> = (0..sessions.len()).collect();
     order.sort_by(|&a, &b| {
         let (a, b) = (&sessions[a], &sessions[b]);
-        a.started_at.cmp(&b.started_at).then_with(|| a.id.cmp(&b.id))
+        a.started_at
+            .cmp(&b.started_at)
+            .then_with(|| a.id.cmp(&b.id))
     });
 
     let mut casts: Vec<Option<Cast>> = vec![None; sessions.len()];
@@ -53,7 +59,10 @@ pub fn cast_all(catalog: &Catalog, assignments: &mut Assignments, sessions: &[Se
 
 fn forget_dead(assignments: &mut Assignments, sessions: &[Session]) {
     let live_sessions: HashSet<_> = sessions.iter().map(|s| &s.id).collect();
-    let live_agents: HashSet<_> = sessions.iter().flat_map(|s| s.agents.iter().map(|a| &a.id)).collect();
+    let live_agents: HashSet<_> = sessions
+        .iter()
+        .flat_map(|s| s.agents.iter().map(|a| &a.id))
+        .collect();
     assignments.rooms.retain(|id, _| live_sessions.contains(id));
     assignments.characters.retain(|key, _| match key {
         ActorKey::Lead(id) => live_sessions.contains(id),
@@ -61,11 +70,18 @@ fn forget_dead(assignments: &mut Assignments, sessions: &[Session]) {
     });
 }
 
-fn pick_room(catalog: &Catalog, assignments: &Assignments, session: &Session, taken: &HashSet<RoomId>) -> RoomId {
+fn pick_room(
+    catalog: &Catalog,
+    assignments: &Assignments,
+    session: &Session,
+    taken: &HashSet<RoomId>,
+) -> RoomId {
     if let Some(room) = assignments.rooms.get(&session.id)
-        && catalog.rooms().contains(room) && !taken.contains(room) {
-            return room.clone();
-        }
+        && catalog.rooms().contains(room)
+        && !taken.contains(room)
+    {
+        return room.clone();
+    }
     let rooms = catalog.rooms();
     let seed = format!("room:{}", session.id);
     let index = pick_free(&seed, rooms.len(), |i| taken.contains(&rooms[i])).unwrap_or(0);
@@ -79,11 +95,16 @@ fn pick_character(
     taken: &HashSet<CharacterId>,
 ) -> CharacterId {
     if let Some(character) = assignments.characters.get(key)
-        && catalog.characters().contains(character) && !taken.contains(character) {
-            return character.clone();
-        }
+        && catalog.characters().contains(character)
+        && !taken.contains(character)
+    {
+        return character.clone();
+    }
     let characters = catalog.characters();
-    let index = pick_free(&key.encode(), characters.len(), |i| taken.contains(&characters[i])).unwrap_or(0);
+    let index = pick_free(&key.encode(), characters.len(), |i| {
+        taken.contains(&characters[i])
+    })
+    .unwrap_or(0);
     characters[index].clone()
 }
 
@@ -95,7 +116,9 @@ mod tests {
 
     fn catalog(characters: usize, rooms: usize) -> Catalog {
         Catalog::new(
-            (0..characters).map(|i| CharacterId::new(format!("c{i}"))).collect(),
+            (0..characters)
+                .map(|i| CharacterId::new(format!("c{i}")))
+                .collect(),
             (0..rooms).map(|i| RoomId::new(format!("r{i}"))).collect(),
         )
         .unwrap()
@@ -113,7 +136,11 @@ mod tests {
             origin: Origin::Registry,
             agents: agents
                 .iter()
-                .map(|a| Agent { id: AgentId::new(*a), kind: "Explore".into(), started_at: Timestamp(started) })
+                .map(|a| Agent {
+                    id: AgentId::new(*a),
+                    kind: "Explore".into(),
+                    started_at: Timestamp(started),
+                })
                 .collect(),
         }
     }
@@ -154,7 +181,11 @@ mod tests {
         let catalog = catalog(5, 5);
         let mut memory = Assignments::default();
         let (first, _) = cast_all(&catalog, &mut memory, &[session("old", 0, &[])]);
-        let (second, _) = cast_all(&catalog, &mut memory, &[session("new", 5, &[]), session("old", 0, &[])]);
+        let (second, _) = cast_all(
+            &catalog,
+            &mut memory,
+            &[session("new", 5, &[]), session("old", 0, &[])],
+        );
         assert_eq!(second[1].room, first[0].room);
         assert_ne!(second[0].room, second[1].room);
     }

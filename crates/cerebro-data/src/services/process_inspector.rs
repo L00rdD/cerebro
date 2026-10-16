@@ -23,12 +23,22 @@ impl ProcessInspector for PsProcessInspector {
         }
         if cfg!(windows) {
             // EXERCISE 10: query Windows for real start times. Until then trust the registry.
-            return pids.iter().map(|&pid| (pid, ProcessInfo { start: None })).collect();
+            return pids
+                .iter()
+                .map(|&pid| (pid, ProcessInfo { start: None }))
+                .collect();
         }
 
-        let list = pids.iter().map(u32::to_string).collect::<Vec<_>>().join(",");
+        let list = pids
+            .iter()
+            .map(u32::to_string)
+            .collect::<Vec<_>>()
+            .join(",");
         // Claude Code records `procStart` in UTC; `ps` prints local time unless told otherwise.
-        match self.runner.run("env", &["TZ=UTC", "ps", "-o", "pid=,lstart=", "-p", &list]) {
+        match self
+            .runner
+            .run("env", &["TZ=UTC", "ps", "-o", "pid=,lstart=", "-p", &list])
+        {
             // `ps` exits with 1 when some pids are gone: the output is still valid.
             Ok(output) => output
                 .stdout
@@ -37,7 +47,10 @@ impl ProcessInspector for PsProcessInspector {
                 .map(|(pid, start)| (pid, ProcessInfo { start: Some(start) }))
                 .collect(),
             // Can't tell: better show possibly stale sessions than hide live ones.
-            Err(_) => pids.iter().map(|&pid| (pid, ProcessInfo { start: None })).collect(),
+            Err(_) => pids
+                .iter()
+                .map(|&pid| (pid, ProcessInfo { start: None }))
+                .collect(),
         }
     }
 }
@@ -84,13 +97,20 @@ mod tests {
             assert_eq!(program, "env");
             assert_eq!(args[..2], ["TZ=UTC", "ps"]);
             assert_eq!(args.last(), Some(&"1,2"));
-            Ok(CommandOutput { success: false, stdout: self.0.into(), stderr: String::new() })
+            Ok(CommandOutput {
+                success: false,
+                stdout: self.0.into(),
+                stderr: String::new(),
+            })
         }
     }
 
     #[test]
     fn parses_lines() {
-        assert_eq!(parse_ps_line("  52117 Thu Oct 15  8:43:57 2026"), Some((52117, "Thu Oct 15 8:43:57 2026".into())));
+        assert_eq!(
+            parse_ps_line("  52117 Thu Oct 15  8:43:57 2026"),
+            Some((52117, "Thu Oct 15 8:43:57 2026".into()))
+        );
         assert_eq!(parse_ps_line("garbage"), None);
         assert_eq!(parse_ps_line(""), None);
     }
@@ -112,7 +132,8 @@ mod tests {
     #[test]
     #[cfg(not(windows))]
     fn only_returns_alive_pids() {
-        let inspector = PsProcessInspector::new(Arc::new(FakeRunner("    1 Thu Oct 15 08:00:00 2026\n")));
+        let inspector =
+            PsProcessInspector::new(Arc::new(FakeRunner("    1 Thu Oct 15 08:00:00 2026\n")));
         let alive = inspector.inspect(&[1, 2]);
         assert_eq!(alive.len(), 1);
         assert_eq!(alive[&1].start.as_deref(), Some("Thu Oct 15 08:00:00 2026"));

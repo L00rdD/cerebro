@@ -61,7 +61,11 @@ mod tests {
     #[test]
     fn parses_real_registry_files_and_skips_garbage() {
         let dir = tempfile::tempdir().unwrap();
-        fs::write(dir.path().join("52117.json"), include_str!("../../tests/fixtures/registry_52117.json")).unwrap();
+        fs::write(
+            dir.path().join("52117.json"),
+            include_str!("../../tests/fixtures/registry_52117.json"),
+        )
+        .unwrap();
         fs::write(dir.path().join("1.json"), "{ not json").unwrap();
         fs::write(dir.path().join("2.key"), "ignored").unwrap();
 
@@ -78,9 +82,17 @@ mod tests {
     #[ignore = "exercise 4"]
     fn scan_reports_malformed_files() {
         let dir = tempfile::tempdir().unwrap();
-        fs::write(dir.path().join("52117.json"), include_str!("../../tests/fixtures/registry_52117.json")).unwrap();
+        fs::write(
+            dir.path().join("52117.json"),
+            include_str!("../../tests/fixtures/registry_52117.json"),
+        )
+        .unwrap();
         fs::write(dir.path().join("1.json"), "{ not json").unwrap();
-        fs::write(dir.path().join("2.key"), "not a registry file: ignored, not a problem").unwrap();
+        fs::write(
+            dir.path().join("2.key"),
+            "not a registry file: ignored, not a problem",
+        )
+        .unwrap();
 
         let scan = ClaudeRegistrySource::new(dir.path()).scan().unwrap();
         assert_eq!(scan.sessions.len(), 1);
@@ -92,6 +104,9 @@ mod tests {
     #[test]
     fn missing_directory_is_reported() {
         let source = ClaudeRegistrySource::new("/definitely/not/here");
-        assert!(matches!(source.observe(), Err(DomainError::SourceUnavailable(_))));
+        assert!(matches!(
+            source.observe(),
+            Err(DomainError::SourceUnavailable(_))
+        ));
     }
 }

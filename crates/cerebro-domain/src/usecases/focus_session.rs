@@ -16,8 +16,14 @@ impl FocusSession {
 
     pub fn execute(&self, session: &Session) -> Result<FocusOutcome, DomainError> {
         let pid = session.pid.ok_or_else(|| {
-            DomainError::NotFocusable(session.id.to_string(), "no process id (hook-only session)".into())
+            DomainError::NotFocusable(
+                session.id.to_string(),
+                "no process id (hook-only session)".into(),
+            )
         })?;
-        self.focuser.focus(&FocusTarget { pid, cwd: session.cwd.clone() })
+        self.focuser.focus(&FocusTarget {
+            pid,
+            cwd: session.cwd.clone(),
+        })
     }
 }

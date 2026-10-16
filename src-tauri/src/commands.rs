@@ -25,8 +25,14 @@ pub async fn focus_session(app: AppHandle, session_id: String) -> Result<FocusDt
     // AppleScript can take a while (or wait for a permission prompt): keep it off the UI thread.
     tauri::async_runtime::spawn_blocking(move || {
         let state = app.state::<AppState>();
-        let scene = state.scene(&session_id).ok_or_else(|| format!("unknown session {session_id}"))?;
-        let outcome = state.container.focus.execute(&scene.session).map_err(|e| e.to_string())?;
+        let scene = state
+            .scene(&session_id)
+            .ok_or_else(|| format!("unknown session {session_id}"))?;
+        let outcome = state
+            .container
+            .focus
+            .execute(&scene.session)
+            .map_err(|e| e.to_string())?;
         let dto = FocusDto::from(outcome);
         if !matches!(dto, FocusDto::NotFound) {
             panel::hide(&app);
@@ -38,8 +44,14 @@ pub async fn focus_session(app: AppHandle, session_id: String) -> Result<FocusDt
 }
 
 #[tauri::command]
-pub fn open_folder(app: AppHandle, state: State<'_, AppState>, session_id: String) -> Result<(), String> {
-    let scene = state.scene(&session_id).ok_or_else(|| format!("unknown session {session_id}"))?;
+pub fn open_folder(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    session_id: String,
+) -> Result<(), String> {
+    let scene = state
+        .scene(&session_id)
+        .ok_or_else(|| format!("unknown session {session_id}"))?;
     app.opener()
         .open_path(scene.session.cwd.display().to_string(), None::<&str>)
         .map_err(|e| e.to_string())
@@ -47,12 +59,22 @@ pub fn open_folder(app: AppHandle, state: State<'_, AppState>, session_id: Strin
 
 #[tauri::command]
 pub fn hook_status(state: State<'_, AppState>) -> Result<&'static str, String> {
-    state.container.hooks.status().map(hook_setup_name).map_err(|e| e.to_string())
+    state
+        .container
+        .hooks
+        .status()
+        .map(hook_setup_name)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub fn install_hooks(state: State<'_, AppState>) -> Result<&'static str, String> {
-    state.container.hooks.install().map(hook_setup_name).map_err(|e| e.to_string())
+    state
+        .container
+        .hooks
+        .install()
+        .map(hook_setup_name)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -63,7 +85,11 @@ pub fn autostart_enabled(app: AppHandle) -> Result<bool, String> {
 #[tauri::command]
 pub fn set_autostart(app: AppHandle, enabled: bool) -> Result<bool, String> {
     let launcher = app.autolaunch();
-    let result = if enabled { launcher.enable() } else { launcher.disable() };
+    let result = if enabled {
+        launcher.enable()
+    } else {
+        launcher.disable()
+    };
     result.map_err(|e| e.to_string())?;
     launcher.is_enabled().map_err(|e| e.to_string())
 }

@@ -1,9 +1,9 @@
 //! Menu bar (macOS) / system tray (Windows, Linux) icon.
 
+use tauri::AppHandle;
 use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::AppHandle;
 
 use crate::dto::CountsDto;
 use crate::panel;
@@ -29,7 +29,12 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
         })
         .on_tray_icon_event(|tray, event| {
             tauri_plugin_positioner::on_tray_event(tray.app_handle(), &event);
-            if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = event {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
                 panel::toggle(tray.app_handle());
             }
         })
@@ -39,7 +44,9 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
 
 /// Filled icon while something is working; character count next to it (macOS only).
 pub fn update(app: &AppHandle, counts: &CountsDto) {
-    let Some(tray) = app.tray_by_id(TRAY_ID) else { return };
+    let Some(tray) = app.tray_by_id(TRAY_ID) else {
+        return;
+    };
     let active = counts.busy > 0 || counts.agents > 0;
     if let Ok(icon) = Image::from_bytes(if active { ICON_ACTIVE } else { ICON_IDLE }) {
         let _ = tray.set_icon(Some(icon));
