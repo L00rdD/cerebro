@@ -4,8 +4,8 @@
 
 Cerebro has two goals:
 
-1. **A useful app.** A macOS menu bar app that shows every running Claude Code session as a room
-   of the X-Mansion, seen from above. Glance at it to see which sessions are working, which are
+1. **A useful app.** A cross-platform tray app (macOS, Windows, Linux) that shows every running
+   Claude Code session as a room of the X-Mansion, seen from above. Glance at it to see which sessions are working, which are
    asleep, and which are waiting for you, then click one to jump to its terminal tab.
 2. **A Rust course in a real codebase.** The app is written to be improved by someone learning
    Rust. Twelve exercises, from a first function to cross-platform code, each one shipping a real
@@ -19,8 +19,11 @@ Cerebro has two goals:
 - 22 rooms (Danger Room, Blackbird Hangar, Cerebro, Beast's Lab…) and 74 characters, drawn as
   pixel-art sprite sheets in `assets/`.
 - Stable picks: a session keeps its room and cast for its whole life, even across restarts.
-- Click to focus: selects the exact iTerm2 tab; activates the hosting app otherwise.
-- Built with Tauri 2 (Rust backend, Svelte UI). macOS today; Windows and Linux are an exercise.
+- Click to focus: selects the exact iTerm2 tab on macOS; activates the hosting app otherwise.
+- Cross-platform by design: built with Tauri 2 (Rust backend, Svelte UI) rather than a native
+  Swift app, so one codebase targets macOS, Windows and Linux. Platform specifics (process
+  inspection, terminal focus) live in adapters behind traits.
+- Platform status: macOS is complete; Windows and Linux support is built in exercise 10.
 
 ## Learning Rust with Cerebro
 
@@ -44,7 +47,9 @@ injection at the edge. Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before 
 
 ## Getting started
 
-Requirements: Rust (stable), Node 20+, macOS 12+.
+Requirements: Rust (stable), Node 20+, and the
+[Tauri 2 prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS (macOS 12+,
+Windows 10+, or a Linux desktop with WebKitGTK).
 
 ```sh
 npm install
@@ -52,7 +57,8 @@ npm run dev            # build the hook sidecar, run the app with hot reload
 npm test               # Rust + UI tests
 npm run lint:rust      # Clippy (pedantic, warnings are errors)
 npm run check          # Svelte / TypeScript checks
-npm run install:macos  # release build, installed to ~/Applications/Cerebro.app
+npm run install:macos  # macOS: release build, installed to ~/Applications/Cerebro.app
+npm run tauri build    # any OS: release bundle in target/release/bundle
 ```
 
 All Rust commands go through `scripts/with-rust.sh`, which puts a real `cargo` first in `PATH`.
@@ -66,7 +72,7 @@ up, but subagents and the *waiting* status don't.
 ```
 crates/cerebro-protocol   file contract shared by hook and app
 crates/cerebro-domain     entities, ports, use cases (pure Rust)
-crates/cerebro-data       adapters: files, processes, AppleScript, settings
+crates/cerebro-data       adapters: files, processes, terminal focus, settings
 crates/cerebro-hook       the Claude Code hook binary
 crates/cerebro-cli        command line companion (built during the exercises)
 src-tauri/                desktop shell: tray, panel, commands, DI
@@ -78,7 +84,8 @@ EXERCISES.md              learn Rust by improving Cerebro
 
 ## Data and privacy
 
-Cerebro only reads local files (`~/.claude/sessions`, `~/.cerebro`) and runs `ps`, `open` and
-`osascript`. Nothing leaves the machine.
+Cerebro only reads local files (`~/.claude/sessions`, `~/.cerebro`) and runs local system tools
+to inspect processes and focus terminals (`ps`, `open` and `osascript` on macOS). Nothing leaves
+the machine.
 
 X-Men characters are Marvel properties; this is a personal fan project, not for distribution.
