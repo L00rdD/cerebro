@@ -69,7 +69,10 @@ up, but subagents and the *waiting* status don't.
 
 ## CI and releases
 
-- **CI** (`.github/workflows/ci.yml`) runs on every pull request, on `main`, and on demand from the
+- **Branches**: work happens on `develop`. Feature branches (`features/…`, `fix/…`, `refactor/…`)
+  start from `develop` and their pull requests target it (it is the default branch on GitHub).
+  `main` only receives `develop` at release time.
+- **CI** (`.github/workflows/ci.yml`) runs on every pull request, on `main` and `develop`, and on demand from the
   Actions tab: rustfmt, Clippy and `cargo test` on macOS, Linux and Windows, plus the UI checks.
 - **Release** (`.github/workflows/release.yml`): bump the version in `package.json`,
   `src-tauri/tauri.conf.json` and `Cargo.toml`, then push a tag `vX.Y.Z`. Installers for macOS
