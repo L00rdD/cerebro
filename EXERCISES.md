@@ -6,7 +6,10 @@ actually uses your code.
 
 ## How to work
 
-- **One branch per exercise**: `git switch -c ex01-humanize-duration`.
+- **One branch per exercise**, named after the kind of change, in snake_case, with the exercise
+  number in front: `features/` for something new, `fix/` for a bug, `refactor/` when behavior
+  stays the same, `ci/` for the pipeline, `release/` for versions. Each exercise gives its branch:
+  `git switch -c features/ex02_session_display`.
 - **The tests are the judge.** Most exercises ship with tests marked `#[ignore = "exercise N"]`
   next to a stub that calls `todo!()`. Run them, watch them fail, make them pass, then delete
   the `#[ignore]` line:
@@ -39,6 +42,7 @@ Before starting, read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and run the a
 
 ### Exercise 1: `humanize_duration`
 
+**Branch**: `features/ex01_humanize_duration`.<br>
 **Goal**: format an elapsed time as `42s`, `9min`, `2h05`, `3d`.<br>
 **Concepts**: functions, integer arithmetic, `if`/`match`, `format!`, `String` vs `&str`, unit tests.<br>
 **Read**: Book ch. 3 (*Common Programming Concepts*), ch. 11.1 (*How to Write Tests*).<br>
@@ -60,6 +64,7 @@ TypeScript twin in `ui/src/lib/format.ts`. Compare both versions.
 
 ### Exercise 2: `Display` for sessions
 
+**Branch**: `features/ex02_session_display`.<br>
 **Goal**: `session.to_string()` gives `personal-f4  busy  2 agents  ~/personal`.<br>
 **Concepts**: traits, `impl Trait for Type`, `std::fmt::Formatter`, `write!`, pattern matching on enums, pluralization.<br>
 **Read**: Book ch. 6 (*Enums and Pattern Matching*), ch. 10.2 (*Traits*).<br>
@@ -76,6 +81,7 @@ TypeScript twin in `ui/src/lib/format.ts`. Compare both versions.
 
 ### Exercise 3: the `cerebro` CLI
 
+**Branch**: `features/ex03_cli`.<br>
 **Goal**: `cargo run -p cerebro-cli -- list` prints the live sessions; `stats` and `hooks` follow.<br>
 **Concepts**: binary crates, workspaces, reusing library crates, `Result` in `main`, `ExitCode`, `Arc<dyn Trait>`.<br>
 **Read**: Book ch. 7 (*Packages, Crates, and Modules*), ch. 12 (*An I/O Project*).<br>
@@ -102,6 +108,7 @@ TypeScript twin in `ui/src/lib/format.ts`. Compare both versions.
 
 ### Exercise 4: stop swallowing errors
 
+**Branch**: `fix/ex04_registry_scan_errors`.<br>
 **Goal**: the registry scan reports which files were unreadable or malformed instead of ignoring them.<br>
 **Concepts**: `Result`, the `?` operator, custom error enums, `thiserror`, `map_err`, partitioning results.<br>
 **Read**: Book ch. 9 (*Error Handling*); the `thiserror` README.<br>
@@ -123,6 +130,7 @@ TypeScript twin in `ui/src/lib/format.ts`. Compare both versions.
 
 ### Exercise 5: statistics with iterators
 
+**Branch**: `features/ex05_session_stats`.<br>
 **Goal**: implement `compute_stats` (agents by type, busiest session, longest running agent).<br>
 **Concepts**: iterators and adapters (`flat_map`, `fold`, `max_by_key`, `min_by_key`), closures, `BTreeMap`, `Option` combinators.<br>
 **Read**: Book ch. 13 (*Iterators and Closures*), ch. 8.3 (*Hash Maps*).<br>
@@ -141,6 +149,7 @@ Rule of the game: no `for` loop and no `let mut`. Then wire it into `cerebro sta
 
 ### Exercise 6: Terminal.app support
 
+**Branch**: `features/ex06_terminal_app_focus`.<br>
 **Goal**: clicking a card focuses the right tab in macOS Terminal, not only in iTerm2.<br>
 **Concepts**: implementing a trait for a new type, trait objects (`Box<dyn TabSelector>`), testing with fakes, raw strings.<br>
 **Read**: Book ch. 17.2 (*Trait Objects*), ch. 19.3 for raw strings (`r#"…"#`).<br>
@@ -172,6 +181,7 @@ return "missing"
 
 ### Exercise 7: borrowing instead of copying
 
+**Branch**: `refactor/ex07_borrowed_ps_parsing`.<br>
 **Goal**: parse `ps` output without allocating, returning slices of the input.<br>
 **Concepts**: references, lifetimes (`PsLine<'a>`), `&str` slicing, `split_whitespace`, `Iterator::eq`.<br>
 **Read**: Book ch. 4 (*Understanding Ownership*), ch. 10.3 (*Validating References with Lifetimes*).<br>
@@ -197,6 +207,7 @@ return "missing"
 
 ### Exercise 8: react instantly with a file watcher
 
+**Branch**: `refactor/ex08_file_watcher`.<br>
 **Goal**: update the panel as soon as a session or agent file changes, instead of polling every 1-2 s.<br>
 **Concepts**: threads, channels (`std::sync::mpsc`), `Arc<Mutex<_>>`, debouncing, external crates (`notify`).<br>
 **Read**: Book ch. 16 (*Fearless Concurrency*); the `notify` crate docs.<br>
@@ -216,6 +227,7 @@ return "missing"
 
 ### Exercise 9: a configuration file
 
+**Branch**: `features/ex09_config_file`.<br>
 **Goal**: `~/.cerebro/config.toml` with `favorite_characters`, `banned_rooms` and `refresh_seconds`.<br>
 **Concepts**: `serde` derive, `#[serde(default)]`, `Default`, the `toml` crate, validating input, passing config through layers.<br>
 **Read**: Book ch. 5 (*Structs*); serde.rs *Attributes* page.<br>
@@ -226,6 +238,7 @@ Write the tests before the code: a missing file means defaults, and an unknown c
 
 ### Exercise 10: Windows and Linux
 
+**Branch**: `features/ex10_windows_linux`.<br>
 **Goal**: Cerebro works outside macOS.<br>
 **Concepts**: `#[cfg(target_os = "…")]`, platform crates, conditional dependencies in `Cargo.toml`.<br>
 **Read**: *The Cargo Book*, "Platform specific dependencies"; the `sysinfo` crate.<br>
@@ -238,6 +251,7 @@ Write the tests before the code: a missing file means defaults, and an unknown c
 
 ### Exercise 11 (boss): tmux
 
+**Branch**: `features/ex11_tmux_focus`.<br>
 **Goal**: clicking a session running inside tmux selects the right tmux window and pane, then focuses the terminal.<br>
 **Concepts**: everything above, plus parsing command output robustly.<br>
 **Hint**: `tmux list-panes -a -F '#{pane_tty} #{session_name}:#{window_index}.#{pane_index}'`, then
@@ -245,6 +259,7 @@ Write the tests before the code: a missing file means defaults, and an unknown c
 
 ### Exercise 12 (no Rust): draw a room
 
+**Branch**: `features/ex12_new_room`.<br>
 **Goal**: add a new room to the Institute without writing code.
 Draw a 96×60 PNG in Aseprite or Piskel (a strip of frames if animated), add an entry to
 `assets/rooms/rooms.json` with its `walkArea`, run the app. Then ask yourself which Rust test
