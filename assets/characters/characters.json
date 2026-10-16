@@ -1,0 +1,415 @@
+{
+  "characters": [
+    {
+      "id": "professor-x",
+      "name": "Professor X",
+      "sprite": "characters/professor-x.png"
+    },
+    {
+      "id": "cyclops",
+      "name": "Cyclops",
+      "sprite": "characters/cyclops.png"
+    },
+    {
+      "id": "jean-grey",
+      "name": "Jean Grey",
+      "sprite": "characters/jean-grey.png"
+    },
+    {
+      "aura": "#FF8A00",
+      "id": "phoenix",
+      "name": "Phoenix",
+      "sprite": "characters/phoenix.png"
+    },
+    {
+      "aura": "#BFE6FF",
+      "id": "storm",
+      "name": "Storm",
+      "sprite": "characters/storm.png"
+    },
+    {
+      "id": "wolverine",
+      "name": "Wolverine",
+      "sprite": "characters/wolverine.png"
+    },
+    {
+      "id": "rogue",
+      "name": "Rogue",
+      "sprite": "characters/rogue.png"
+    },
+    {
+      "id": "gambit",
+      "name": "Gambit",
+      "sprite": "characters/gambit.png"
+    },
+    {
+      "id": "beast",
+      "name": "Beast",
+      "sprite": "characters/beast.png"
+    },
+    {
+      "id": "nightcrawler",
+      "name": "Nightcrawler",
+      "sprite": "characters/nightcrawler.png"
+    },
+    {
+      "aura": "#BFE6FF",
+      "id": "iceman",
+      "name": "Iceman",
+      "sprite": "characters/iceman.png"
+    },
+    {
+      "id": "angel",
+      "name": "Angel",
+      "sprite": "characters/angel.png"
+    },
+    {
+      "id": "archangel",
+      "name": "Archangel",
+      "sprite": "characters/archangel.png"
+    },
+    {
+      "id": "colossus",
+      "name": "Colossus",
+      "sprite": "characters/colossus.png"
+    },
+    {
+      "id": "shadowcat",
+      "name": "Kitty Pryde",
+      "sprite": "characters/shadowcat.png"
+    },
+    {
+      "aura": "#FFD23F",
+      "id": "jubilee",
+      "name": "Jubilee",
+      "sprite": "characters/jubilee.png"
+    },
+    {
+      "aura": "#FF4FD8",
+      "id": "psylocke",
+      "name": "Psylocke",
+      "sprite": "characters/psylocke.png"
+    },
+    {
+      "id": "bishop",
+      "name": "Bishop",
+      "sprite": "characters/bishop.png"
+    },
+    {
+      "id": "cable",
+      "name": "Cable",
+      "sprite": "characters/cable.png"
+    },
+    {
+      "id": "emma-frost",
+      "name": "Emma Frost",
+      "sprite": "characters/emma-frost.png"
+    },
+    {
+      "aura": "#FF6B3D",
+      "id": "havok",
+      "name": "Havok",
+      "sprite": "characters/havok.png"
+    },
+    {
+      "aura": "#7CFFB2",
+      "id": "polaris",
+      "name": "Polaris",
+      "sprite": "characters/polaris.png"
+    },
+    {
+      "id": "banshee",
+      "name": "Banshee",
+      "sprite": "characters/banshee.png"
+    },
+    {
+      "aura": "#FF8A00",
+      "id": "sunfire",
+      "name": "Sunfire",
+      "sprite": "characters/sunfire.png"
+    },
+    {
+      "id": "thunderbird",
+      "name": "Thunderbird",
+      "sprite": "characters/thunderbird.png"
+    },
+    {
+      "id": "forge",
+      "name": "Forge",
+      "sprite": "characters/forge.png"
+    },
+    {
+      "aura": "#FF7AD9",
+      "id": "dazzler",
+      "name": "Dazzler",
+      "sprite": "characters/dazzler.png"
+    },
+    {
+      "id": "longshot",
+      "name": "Longshot",
+      "sprite": "characters/longshot.png"
+    },
+    {
+      "aura": "#FF8A00",
+      "id": "cannonball",
+      "name": "Cannonball",
+      "sprite": "characters/cannonball.png"
+    },
+    {
+      "aura": "#2B2B33",
+      "id": "sunspot",
+      "name": "Sunspot",
+      "sprite": "characters/sunspot.png"
+    },
+    {
+      "aura": "#FF8A00",
+      "id": "magik",
+      "name": "Magik",
+      "sprite": "characters/magik.png"
+    },
+    {
+      "id": "wolfsbane",
+      "name": "Wolfsbane",
+      "sprite": "characters/wolfsbane.png"
+    },
+    {
+      "id": "mirage",
+      "name": "Mirage",
+      "sprite": "characters/mirage.png"
+    },
+    {
+      "id": "cypher",
+      "name": "Cypher",
+      "sprite": "characters/cypher.png"
+    },
+    {
+      "aura": "#E0C020",
+      "id": "warlock",
+      "name": "Warlock",
+      "sprite": "characters/warlock.png"
+    },
+    {
+      "id": "karma",
+      "name": "Karma",
+      "sprite": "characters/karma.png"
+    },
+    {
+      "aura": "#FFD23F",
+      "id": "boom-boom",
+      "name": "Boom-Boom",
+      "sprite": "characters/boom-boom.png"
+    },
+    {
+      "id": "domino",
+      "name": "Domino",
+      "sprite": "characters/domino.png"
+    },
+    {
+      "id": "x-23",
+      "name": "X-23",
+      "sprite": "characters/x-23.png"
+    },
+    {
+      "aura": "#B46BFF",
+      "id": "armor",
+      "name": "Armor",
+      "sprite": "characters/armor.png"
+    },
+    {
+      "aura": "#FFB6E1",
+      "id": "pixie",
+      "name": "Pixie",
+      "sprite": "characters/pixie.png"
+    },
+    {
+      "aura": "#FF4FD8",
+      "id": "blink",
+      "name": "Blink",
+      "sprite": "characters/blink.png"
+    },
+    {
+      "id": "multiple-man",
+      "name": "Multiple Man",
+      "sprite": "characters/multiple-man.png"
+    },
+    {
+      "id": "strong-guy",
+      "name": "Strong Guy",
+      "sprite": "characters/strong-guy.png"
+    },
+    {
+      "id": "siryn",
+      "name": "Siryn",
+      "sprite": "characters/siryn.png"
+    },
+    {
+      "aura": "#FF8A00",
+      "id": "rachel-summers",
+      "name": "Rachel Summers",
+      "sprite": "characters/rachel-summers.png"
+    },
+    {
+      "aura": "#F4F4F4",
+      "id": "northstar",
+      "name": "Northstar",
+      "sprite": "characters/northstar.png"
+    },
+    {
+      "aura": "#F4F4F4",
+      "id": "aurora",
+      "name": "Aurora",
+      "sprite": "characters/aurora.png"
+    },
+    {
+      "id": "marrow",
+      "name": "Marrow",
+      "sprite": "characters/marrow.png"
+    },
+    {
+      "aura": "#FF8A00",
+      "id": "chamber",
+      "name": "Chamber",
+      "sprite": "characters/chamber.png"
+    },
+    {
+      "id": "husk",
+      "name": "Husk",
+      "sprite": "characters/husk.png"
+    },
+    {
+      "id": "monet",
+      "name": "M",
+      "sprite": "characters/monet.png"
+    },
+    {
+      "aura": "#9BE15D",
+      "id": "synch",
+      "name": "Synch",
+      "sprite": "characters/synch.png"
+    },
+    {
+      "aura": "#FF8A00",
+      "id": "hope",
+      "name": "Hope Summers",
+      "sprite": "characters/hope.png"
+    },
+    {
+      "id": "doop",
+      "name": "Doop",
+      "sprite": "characters/doop.png"
+    },
+    {
+      "id": "rockslide",
+      "name": "Rockslide",
+      "sprite": "characters/rockslide.png"
+    },
+    {
+      "id": "anole",
+      "name": "Anole",
+      "sprite": "characters/anole.png"
+    },
+    {
+      "aura": "#FFE27A",
+      "id": "elixir",
+      "name": "Elixir",
+      "sprite": "characters/elixir.png"
+    },
+    {
+      "id": "mercury",
+      "name": "Mercury",
+      "sprite": "characters/mercury.png"
+    },
+    {
+      "aura": "#6FB7FF",
+      "id": "hellion",
+      "name": "Hellion",
+      "sprite": "characters/hellion.png"
+    },
+    {
+      "aura": "#B46BFF",
+      "id": "magneto",
+      "name": "Magneto",
+      "sprite": "characters/magneto.png"
+    },
+    {
+      "id": "sage",
+      "name": "Sage",
+      "sprite": "characters/sage.png"
+    },
+    {
+      "id": "caliban",
+      "name": "Caliban",
+      "sprite": "characters/caliban.png"
+    },
+    {
+      "aura": "#9FD8FF",
+      "id": "cecilia-reyes",
+      "name": "Cecilia Reyes",
+      "sprite": "characters/cecilia-reyes.png"
+    },
+    {
+      "id": "juggernaut",
+      "name": "Juggernaut",
+      "sprite": "characters/juggernaut.png"
+    },
+    {
+      "id": "rictor",
+      "name": "Rictor",
+      "sprite": "characters/rictor.png"
+    },
+    {
+      "id": "shatterstar",
+      "name": "Shatterstar",
+      "sprite": "characters/shatterstar.png"
+    },
+    {
+      "id": "feral",
+      "name": "Feral",
+      "sprite": "characters/feral.png"
+    },
+    {
+      "id": "stepford",
+      "name": "Stepford Cuckoos",
+      "sprite": "characters/stepford.png"
+    },
+    {
+      "id": "gentle",
+      "name": "Gentle",
+      "sprite": "characters/gentle.png"
+    },
+    {
+      "aura": "#FFB6C1",
+      "id": "glob-herman",
+      "name": "Glob Herman",
+      "sprite": "characters/glob-herman.png"
+    },
+    {
+      "id": "beak",
+      "name": "Beak",
+      "sprite": "characters/beak.png"
+    },
+    {
+      "id": "nocturne",
+      "name": "Nocturne",
+      "sprite": "characters/nocturne.png"
+    },
+    {
+      "aura": "#FF4FD8",
+      "id": "kid-omega",
+      "name": "Kid Omega",
+      "sprite": "characters/kid-omega.png"
+    }
+  ],
+  "frameSize": 12,
+  "frames": {
+    "stand": 0,
+    "walk": [
+      1,
+      2
+    ]
+  },
+  "rows": {
+    "back": 1,
+    "front": 0
+  }
+}

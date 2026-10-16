@@ -1,0 +1,12 @@
+[package]
+name = "cerebro-domain"
+description = "Cerebro business rules: entities, ports and use cases. Pure Rust, no I/O."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+
+[lints]
+workspace = true

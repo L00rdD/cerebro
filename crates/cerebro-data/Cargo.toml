@@ -1,0 +1,18 @@
+[package]
+name = "cerebro-data"
+description = "Cerebro adapters: files, processes, terminal focus and Claude Code settings."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+cerebro-domain.workspace = true
+cerebro-protocol.workspace = true
+serde.workspace = true
+serde_json = { workspace = true, features = ["preserve_order"] }
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

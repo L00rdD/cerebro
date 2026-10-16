@@ -1,0 +1,17 @@
+[package]
+name = "cerebro-cli"
+description = "Command line companion for Cerebro (exercise playground, see EXERCISES.md)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "cerebro"
+path = "src/main.rs"
+
+[dependencies]
+cerebro-domain.workspace = true
+cerebro-data.workspace = true
+
+[lints]
+workspace = true

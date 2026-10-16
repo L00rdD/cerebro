@@ -1,0 +1,36 @@
+:root {
+  color-scheme: dark;
+  --bg: rgba(24, 24, 30, 0.97);
+  --card: #1f1f26;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --text: #ececf1;
+  --muted: #9a9aa8;
+  --busy: #3fd07f;
+  --idle: #8e8e99;
+  --waiting: #ffd23f;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: transparent;
+  color: var(--text);
+  font: 12px var(--mono);
+  user-select: none;
+  -webkit-user-select: none;
+  overflow: hidden;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+button:hover { background: rgba(255, 255, 255, 0.14); }
