@@ -21,11 +21,11 @@ pub fn cast_all(
     forget_dead(assignments, sessions);
 
     let mut order: Vec<usize> = (0..sessions.len()).collect();
-    order.sort_by(|&a, &b| {
-        let (a, b) = (&sessions[a], &sessions[b]);
-        a.started_at
-            .cmp(&b.started_at)
-            .then_with(|| a.id.cmp(&b.id))
+    order.sort_by(|&left_index, &right_index| {
+        let (left, right) = (&sessions[left_index], &sessions[right_index]);
+        left.started_at
+            .cmp(&right.started_at)
+            .then_with(|| left.id.cmp(&right.id))
     });
 
     let mut casts: Vec<Option<Cast>> = vec![None; sessions.len()];
@@ -58,10 +58,10 @@ pub fn cast_all(
 }
 
 fn forget_dead(assignments: &mut Assignments, sessions: &[Session]) {
-    let live_sessions: HashSet<_> = sessions.iter().map(|s| &s.id).collect();
+    let live_sessions: HashSet<_> = sessions.iter().map(|session| &session.id).collect();
     let live_agents: HashSet<_> = sessions
         .iter()
-        .flat_map(|s| s.agents.iter().map(|a| &a.id))
+        .flat_map(|session| session.agents.iter().map(|agent| &agent.id))
         .collect();
     assignments.rooms.retain(|id, _| live_sessions.contains(id));
     assignments.characters.retain(|key, _| match key {
@@ -84,7 +84,10 @@ fn pick_room(
     }
     let rooms = catalog.rooms();
     let seed = format!("room:{}", session.id);
-    let index = pick_free(&seed, rooms.len(), |i| taken.contains(&rooms[i])).unwrap_or(0);
+    let index = pick_free(&seed, rooms.len(), |room_index| {
+        taken.contains(&rooms[room_index])
+    })
+    .unwrap_or(0);
     rooms[index].clone()
 }
 
@@ -101,8 +104,8 @@ fn pick_character(
         return character.clone();
     }
     let characters = catalog.characters();
-    let index = pick_free(&key.encode(), characters.len(), |i| {
-        taken.contains(&characters[i])
+    let index = pick_free(&key.encode(), characters.len(), |character_index| {
+        taken.contains(&characters[character_index])
     })
     .unwrap_or(0);
     characters[index].clone()
@@ -117,9 +120,11 @@ mod tests {
     fn catalog(characters: usize, rooms: usize) -> Catalog {
         Catalog::new(
             (0..characters)
-                .map(|i| CharacterId::new(format!("c{i}")))
+                .map(|index| CharacterId::new(format!("c{index}")))
                 .collect(),
-            (0..rooms).map(|i| RoomId::new(format!("r{i}"))).collect(),
+            (0..rooms)
+                .map(|index| RoomId::new(format!("r{index}")))
+                .collect(),
         )
         .unwrap()
     }
@@ -136,8 +141,8 @@ mod tests {
             origin: Origin::Registry,
             agents: agents
                 .iter()
-                .map(|a| Agent {
-                    id: AgentId::new(*a),
+                .map(|agent_id| Agent {
+                    id: AgentId::new(*agent_id),
                     kind: "Explore".into(),
                     started_at: Timestamp(started),
                 })
@@ -148,9 +153,11 @@ mod tests {
     #[test]
     fn rooms_are_unique_while_available() {
         let catalog = catalog(10, 3);
-        let sessions: Vec<_> = (0..3).map(|i| session(&format!("s{i}"), i, &[])).collect();
+        let sessions: Vec<_> = (0..3)
+            .map(|index| session(&format!("s{index}"), index, &[]))
+            .collect();
         let (casts, _) = cast_all(&catalog, &mut Assignments::default(), &sessions);
-        let rooms: HashSet<_> = casts.iter().map(|c| &c.room).collect();
+        let rooms: HashSet<_> = casts.iter().map(|cast| &cast.room).collect();
         assert_eq!(rooms.len(), 3);
     }
 

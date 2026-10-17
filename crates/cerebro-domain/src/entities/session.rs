@@ -79,17 +79,20 @@ impl Session {
 
 /// EXERCISE 2: `busy`, `idle`, `waiting`, or the raw text for unknown statuses.
 impl std::fmt::Display for SessionStatus {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let _ = f;
-        todo!("Exercise 2: write the status")
+    fn fmt(&self, output: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        output.pad(self.as_str())
     }
 }
 
 /// EXERCISE 2: one line for the CLI, e.g. `personal-f4  busy  2 agents  ~/personal`.
 impl std::fmt::Display for Session {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let _ = f;
-        todo!("Exercise 2: describe session {}", self.id)
+    fn fmt(&self, output: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let agent_count = self.agents.len();
+        let plural = if agent_count == 1 { "" } else { "s" };
+        write!(output, "{}", self.name)?;
+        write!(output, "  {}", self.status)?;
+        write!(output, "  {agent_count} agent{plural}")?;
+        write!(output, "  {}", self.cwd.display())
     }
 }
 
@@ -108,8 +111,8 @@ mod tests {
             status_since: Timestamp(0),
             origin: Origin::Registry,
             agents: (0..agents)
-                .map(|i| Agent {
-                    id: AgentId::new(format!("a{i}")),
+                .map(|index| Agent {
+                    id: AgentId::new(format!("a{index}")),
                     kind: "Explore".into(),
                     started_at: Timestamp(0),
                 })
@@ -118,7 +121,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "exercise 2"]
     fn status_display() {
         assert_eq!(SessionStatus::Busy.to_string(), "busy");
         assert_eq!(
@@ -128,7 +130,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "exercise 2"]
     fn session_display_counts_agents() {
         let line = session(2).to_string();
         assert!(line.contains("personal-f4"), "{line}");

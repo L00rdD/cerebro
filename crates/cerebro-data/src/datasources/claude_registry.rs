@@ -38,8 +38,9 @@ pub enum RegistryProblem {
 
 impl SessionSource for ClaudeRegistrySource {
     fn observe(&self) -> Result<Vec<ObservedSession>, DomainError> {
-        let entries = fs::read_dir(&self.dir)
-            .map_err(|e| DomainError::SourceUnavailable(format!("{}: {e}", self.dir.display())))?;
+        let entries = fs::read_dir(&self.dir).map_err(|error| {
+            DomainError::SourceUnavailable(format!("{}: {error}", self.dir.display()))
+        })?;
 
         // Unreadable or malformed files are skipped (EXERCISE 4 surfaces them instead).
         Ok(entries
@@ -71,11 +72,14 @@ mod tests {
 
         let sessions = ClaudeRegistrySource::new(dir.path()).observe().unwrap();
         assert_eq!(sessions.len(), 1);
-        let s = &sessions[0];
-        assert_eq!(s.session.pid, Some(52117));
-        assert_eq!(s.session.name, "example-project-f6");
-        assert_eq!(s.session.status, SessionStatus::Idle);
-        assert_eq!(s.process_start.as_deref(), Some("Thu Oct 15 08:43:57 2026"));
+        let session = &sessions[0];
+        assert_eq!(session.session.pid, Some(52117));
+        assert_eq!(session.session.name, "example-project-f6");
+        assert_eq!(session.session.status, SessionStatus::Idle);
+        assert_eq!(
+            session.process_start.as_deref(),
+            Some("Thu Oct 15 08:43:57 2026")
+        );
     }
 
     #[test]

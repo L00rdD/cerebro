@@ -61,7 +61,7 @@ npm run install:macos  # macOS: release build, installed to ~/Applications/Cereb
 npm run tauri build    # any OS: release bundle in target/release/bundle
 ```
 
-All Rust commands go through `scripts/with-rust.sh`, which puts a real `cargo` first in `PATH`.
+The npm scripts run Rust commands through `scripts/with-rust.sh`, which puts a real `cargo` first in `PATH`.
 
 On first launch, click **Install** in the panel banner: it registers `cerebro-hook` in
 `~/.claude/settings.json` (a backup is written next to it). Without hooks, sessions still show
@@ -69,8 +69,12 @@ up, but subagents and the *waiting* status don't.
 
 ## CI and releases
 
-- **CI** (`.github/workflows/ci.yml`) runs on every pull request, on `main`, and on demand from the
-  Actions tab: rustfmt, Clippy and `cargo test` on macOS, Linux and Windows, plus the UI checks.
+- **Branches**: work happens on `develop`. Feature branches (`features/…`, `fix/…`, `refactor/…`)
+  start from `develop` and their pull requests target it (it is the default branch on GitHub).
+  `main` only receives `develop` at release time.
+- **CI** (`.github/workflows/ci.yml`) runs on every pull request, on `main` and `develop`, and on demand from the
+  Actions tab: rustfmt, Clippy, `cargo test` and the UI checks. Work headed for `develop` is checked
+  on macOS only; anything headed for `main` (a release) on macOS, Linux and Windows.
 - **Release** (`.github/workflows/release.yml`): bump the version in `package.json`,
   `src-tauri/tauri.conf.json` and `Cargo.toml`, then push a tag `vX.Y.Z`. Installers for macOS
   (Apple Silicon and Intel), Linux and Windows are attached to a GitHub release. Run it by hand to

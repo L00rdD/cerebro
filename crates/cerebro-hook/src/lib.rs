@@ -39,7 +39,7 @@ pub fn handle(raw_event: &str, paths: &Paths, now_ms: u64) -> io::Result<Outcome
         "SessionEnd" => {
             remove_if_exists(&paths.hook_session_file(&session_id))?;
             match fs::remove_dir_all(paths.session_agents_dir(&session_id)) {
-                Err(e) if e.kind() != io::ErrorKind::NotFound => return Err(e),
+                Err(error) if error.kind() != io::ErrorKind::NotFound => return Err(error),
                 _ => {}
             }
             Ok(Outcome::SessionRemoved)
@@ -77,7 +77,7 @@ fn is_permission_prompt(event: &Value) -> bool {
         Some(kind) => kind == "permission_prompt",
         None => event["message"]
             .as_str()
-            .is_some_and(|m| m.to_lowercase().contains("permission")),
+            .is_some_and(|message| message.to_lowercase().contains("permission")),
     }
 }
 
@@ -92,7 +92,10 @@ fn set_status(
     let previous = read_json::<HookSession>(&file).ok();
 
     // PostToolUse fires on every tool call: skip the write when nothing changes.
-    if previous.as_ref().is_some_and(|p| p.status == status) {
+    if previous
+        .as_ref()
+        .is_some_and(|previous_record| previous_record.status == status)
+    {
         return Ok(Outcome::SessionUnchanged);
     }
 
@@ -100,11 +103,11 @@ fn set_status(
         version: FORMAT_VERSION,
         session_id: session_id.to_owned(),
         cwd: match &previous {
-            Some(p) if cwd.is_empty() => p.cwd.clone(),
+            Some(previous_record) if cwd.is_empty() => previous_record.cwd.clone(),
             _ => cwd.to_owned(),
         },
         status,
-        started_at_ms: previous.map_or(now_ms, |p| p.started_at_ms),
+        started_at_ms: previous.map_or(now_ms, |previous_record| previous_record.started_at_ms),
         status_since_ms: now_ms,
     };
     write_json_atomic(&file, &record)?;
@@ -113,7 +116,7 @@ fn set_status(
 
 fn remove_if_exists(path: &std::path::Path) -> io::Result<()> {
     match fs::remove_file(path) {
-        Err(e) if e.kind() != io::ErrorKind::NotFound => Err(e),
+        Err(error) if error.kind() != io::ErrorKind::NotFound => Err(error),
         _ => Ok(()),
     }
 }
@@ -136,25 +139,28 @@ mod tests {
     #[test]
     fn session_lifecycle() {
         let (_dir, paths) = setup();
-        let ev = |name: &str| json!({"hook_event_name": name, "session_id": "s1", "cwd": "/w"});
+        let event = |name: &str| json!({"hook_event_name": name, "session_id": "s1", "cwd": "/w"});
 
         assert_eq!(
-            run(&paths, &ev("SessionStart"), 1),
+            run(&paths, &event("SessionStart"), 1),
             Outcome::SessionUpdated(HookStatus::Idle)
         );
         assert_eq!(
-            run(&paths, &ev("UserPromptSubmit"), 2),
+            run(&paths, &event("UserPromptSubmit"), 2),
             Outcome::SessionUpdated(HookStatus::Busy)
         );
         assert_eq!(
-            run(&paths, &ev("PostToolUse"), 3),
+            run(&paths, &event("PostToolUse"), 3),
             Outcome::SessionUnchanged
         );
 
         let record: HookSession = read_json(&paths.hook_session_file("s1")).unwrap();
         assert_eq!((record.started_at_ms, record.status_since_ms), (1, 2));
 
-        assert_eq!(run(&paths, &ev("SessionEnd"), 4), Outcome::SessionRemoved);
+        assert_eq!(
+            run(&paths, &event("SessionEnd"), 4),
+            Outcome::SessionRemoved
+        );
         assert!(!paths.hook_session_file("s1").exists());
     }
 
@@ -165,10 +171,10 @@ mod tests {
                           "notification_type": "idle_prompt", "message": "Claude is waiting for your input"});
         assert_eq!(run(&paths, &idle, 1), Outcome::Ignored);
 
-        let perm = json!({"hook_event_name": "Notification", "session_id": "s1",
+        let permission_event = json!({"hook_event_name": "Notification", "session_id": "s1",
                           "message": "Claude needs your permission to use Bash"});
         assert_eq!(
-            run(&paths, &perm, 2),
+            run(&paths, &permission_event, 2),
             Outcome::SessionUpdated(HookStatus::Waiting)
         );
     }

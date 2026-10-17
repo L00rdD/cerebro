@@ -22,16 +22,22 @@ impl Snapshot {
     pub fn character_count(&self) -> usize {
         self.scenes
             .iter()
-            .map(|s| s.session.character_count())
+            .map(|scene| scene.session.character_count())
             .sum()
     }
 
     pub fn agent_count(&self) -> usize {
-        self.scenes.iter().map(|s| s.session.agents.len()).sum()
+        self.scenes
+            .iter()
+            .map(|scene| scene.session.agents.len())
+            .sum()
     }
 
     pub fn busy_count(&self) -> usize {
-        self.scenes.iter().filter(|s| s.session.is_busy()).count()
+        self.scenes
+            .iter()
+            .filter(|scene| scene.session.is_busy())
+            .count()
     }
 
     /// Same content regardless of when it was taken; used to skip redundant UI updates.

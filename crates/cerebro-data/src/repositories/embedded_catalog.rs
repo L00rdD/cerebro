@@ -12,16 +12,20 @@ pub struct EmbeddedCatalog;
 
 impl CatalogSource for EmbeddedCatalog {
     fn catalog(&self) -> Result<Catalog, DomainError> {
-        let invalid = |e: serde_json::Error| DomainError::InvalidCatalog(e.to_string());
+        let invalid = |error: serde_json::Error| DomainError::InvalidCatalog(error.to_string());
         let characters: CharactersFile = serde_json::from_str(CHARACTERS_JSON).map_err(invalid)?;
         let rooms: RoomsFile = serde_json::from_str(ROOMS_JSON).map_err(invalid)?;
         Catalog::new(
             characters
                 .characters
                 .into_iter()
-                .map(|c| CharacterId::new(c.id))
+                .map(|character| CharacterId::new(character.id))
                 .collect(),
-            rooms.rooms.into_iter().map(|r| RoomId::new(r.id)).collect(),
+            rooms
+                .rooms
+                .into_iter()
+                .map(|room| RoomId::new(room.id))
+                .collect(),
         )
     }
 }

@@ -52,7 +52,7 @@ impl ObserveSessions {
                 let live = self.verified(registry);
                 let recent_hook_activity = hook_sessions
                     .iter()
-                    .any(|h| now.since(h.session.status_since) < FALLBACK_ACTIVITY_WINDOW_MS);
+                    .any(|hook| now.since(hook.session.status_since) < FALLBACK_ACTIVITY_WINDOW_MS);
                 if live.is_empty() && recent_hook_activity {
                     let reason =
                         "Claude Code's session registry is empty while hooks report activity"
@@ -67,14 +67,14 @@ impl ObserveSessions {
         for session in &mut sessions {
             session.agents = self.deps.agents.agents_of(&session.id);
         }
-        let alive: Vec<SessionId> = sessions.iter().map(|s| s.id.clone()).collect();
+        let alive: Vec<SessionId> = sessions.iter().map(|session| session.id.clone()).collect();
         self.deps.agents.forget_all_except(&alive);
 
         // Launch order keeps cards in place when a session changes status.
-        sessions.sort_by(|a, b| {
-            a.started_at
-                .cmp(&b.started_at)
-                .then_with(|| a.id.cmp(&b.id))
+        sessions.sort_by(|left, right| {
+            left.started_at
+                .cmp(&right.started_at)
+                .then_with(|| left.id.cmp(&right.id))
         });
 
         let mut assignments = self
@@ -102,7 +102,10 @@ impl ObserveSessions {
     /// Keeps registry sessions whose process is alive and is still the same process
     /// (a recycled pid has a different start time: report item m2).
     fn verified(&self, registry: Vec<ObservedSession>) -> Vec<Session> {
-        let pids: Vec<u32> = registry.iter().filter_map(|o| o.session.pid).collect();
+        let pids: Vec<u32> = registry
+            .iter()
+            .filter_map(|observed| observed.session.pid)
+            .collect();
         let processes = self.deps.processes.inspect(&pids);
         registry
             .into_iter()
@@ -124,13 +127,18 @@ impl ObserveSessions {
 }
 
 fn strip(observed: Vec<ObservedSession>) -> Vec<Session> {
-    observed.into_iter().map(|o| o.session).collect()
+    observed
+        .into_iter()
+        .map(|observed_session| observed_session.session)
+        .collect()
 }
 
 /// The registry doesn't know about permission prompts; the hooks do.
 fn overlay_waiting(mut sessions: Vec<Session>, hooks: &[ObservedSession]) -> Vec<Session> {
-    let by_id: HashMap<&SessionId, &Session> =
-        hooks.iter().map(|h| (&h.session.id, &h.session)).collect();
+    let by_id: HashMap<&SessionId, &Session> = hooks
+        .iter()
+        .map(|hook| (&hook.session.id, &hook.session))
+        .collect();
     for session in &mut sessions {
         if let Some(hook) = by_id.get(&session.id)
             && hook.status == SessionStatus::Waiting
@@ -144,8 +152,8 @@ fn overlay_waiting(mut sessions: Vec<Session>, hooks: &[ObservedSession]) -> Vec
 }
 
 /// Compares two `ps`-style dates while ignoring whitespace differences.
-fn same_start(a: &str, b: &str) -> bool {
-    a.split_whitespace().eq(b.split_whitespace())
+fn same_start(recorded: &str, actual: &str) -> bool {
+    recorded.split_whitespace().eq(actual.split_whitespace())
 }
 
 #[cfg(test)]
@@ -167,8 +175,8 @@ mod tests {
         fn agents_of(&self, session: &SessionId) -> Vec<Agent> {
             self.0
                 .iter()
-                .filter(|(s, _)| s == session)
-                .map(|(_, a)| a.clone())
+                .filter(|(owner, _)| owner == session)
+                .map(|(_, agent)| agent.clone())
                 .collect()
         }
         fn forget_all_except(&self, _alive: &[SessionId]) {}
@@ -187,8 +195,8 @@ mod tests {
         fn load(&self) -> Assignments {
             self.0.lock().unwrap().clone()
         }
-        fn save(&self, a: &Assignments) -> Result<(), DomainError> {
-            *self.0.lock().unwrap() = a.clone();
+        fn save(&self, assignments: &Assignments) -> Result<(), DomainError> {
+            *self.0.lock().unwrap() = assignments.clone();
             Ok(())
         }
     }
@@ -231,11 +239,11 @@ mod tests {
         FakeProcesses(
             entries
                 .iter()
-                .map(|(p, s)| {
+                .map(|(pid, start)| {
                     (
-                        *p,
+                        *pid,
                         ProcessInfo {
-                            start: s.map(Into::into),
+                            start: start.map(Into::into),
                         },
                     )
                 })
@@ -319,7 +327,7 @@ mod tests {
         let ids: Vec<_> = snapshot
             .scenes
             .iter()
-            .map(|s| s.session.id.as_str())
+            .map(|scene| scene.session.id.as_str())
             .collect();
         assert_eq!(ids, ["same"]);
     }
@@ -398,7 +406,7 @@ mod tests {
         let ids: Vec<_> = snapshot
             .scenes
             .iter()
-            .map(|s| s.session.id.as_str())
+            .map(|scene| scene.session.id.as_str())
             .collect();
         assert_eq!(ids, ["early", "late"]);
     }

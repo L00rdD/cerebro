@@ -128,7 +128,7 @@ impl Paths {
 pub fn sanitize_id(raw: &str) -> Option<String> {
     let clean: String = raw
         .chars()
-        .filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
+        .filter(|symbol| symbol.is_ascii_alphanumeric() || *symbol == '-' || *symbol == '_')
         .collect();
     (!clean.is_empty()).then_some(clean)
 }
@@ -136,7 +136,9 @@ pub fn sanitize_id(raw: &str) -> Option<String> {
 pub fn now_ms() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))
+        .map_or(0, |elapsed| {
+            u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX)
+        })
 }
 
 /// Writes through a temporary file then renames it, so readers never see half a file.
@@ -144,9 +146,9 @@ pub fn write_json_atomic<T: Serialize>(path: &Path, value: &T) -> io::Result<()>
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
-    let tmp = path.with_extension("json.tmp");
-    fs::write(&tmp, serde_json::to_vec(value)?)?;
-    fs::rename(&tmp, path)
+    let temporary_path = path.with_extension("json.tmp");
+    fs::write(&temporary_path, serde_json::to_vec(value)?)?;
+    fs::rename(&temporary_path, path)
 }
 
 pub fn read_json<T: for<'de> Deserialize<'de>>(path: &Path) -> io::Result<T> {

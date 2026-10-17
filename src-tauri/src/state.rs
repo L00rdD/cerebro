@@ -49,6 +49,6 @@ impl AppState {
         self.snapshot()?
             .scenes
             .into_iter()
-            .find(|s| s.session.id.as_str() == session_id)
+            .find(|scene| scene.session.id.as_str() == session_id)
     }
 }
