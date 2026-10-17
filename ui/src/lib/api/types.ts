@@ -12,6 +12,8 @@ export interface ActorDto {
 
 export interface SceneDto {
   id: string;
+  /** AI tool the session runs in, e.g. "claude-code". */
+  tool: string;
   name: string;
   cwd: string;
   status: SessionStatus;
@@ -22,11 +24,15 @@ export interface SceneDto {
   actors: ActorDto[];
 }
 
-export type ModeDto = { kind: "registry" } | { kind: "hooksFallback"; reason: string };
+/** A source that failed or returned degraded data; its message is ready to display. */
+export interface WarningDto {
+  tool: string;
+  message: string;
+}
 
 export interface SnapshotDto {
   scenes: SceneDto[];
-  mode: ModeDto;
+  warnings: WarningDto[];
   counts: { sessions: number; busy: number; agents: number; characters: number };
   takenAt: number;
 }

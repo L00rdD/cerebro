@@ -2,6 +2,7 @@
 
 Cerebro follows Clean Architecture (same principles as `flutter_clean_template`, translated to Rust):
 the domain is pure and depends on nothing; outer layers depend on it through traits.
+It is also agnostic of the AI tool: it sees sessions tagged with a `ToolId`, never where they came from.
 
 ```
                 ┌──────────────────────────── presentation ─────────────────────────────┐
@@ -28,8 +29,8 @@ the domain is pure and depends on nothing; outer layers depend on it through tra
 | Crate | Layer | Depends on | Role |
 |---|---|---|---|
 | `cerebro-protocol` | contract | serde | File formats and paths shared by the hook (writer) and the app (reader). Hook event list. |
-| `cerebro-domain` | domain | thiserror | Entities, ports, casting strategy, use cases. No I/O, no serde. |
-| `cerebro-data` | data | domain, protocol | Implements every port with real files, processes and AppleScript. |
+| `cerebro-domain` | domain | thiserror | Entities, ports, casting strategy, use cases. No I/O, no serde, no knowledge of any AI tool. |
+| `cerebro-data` | data | domain, protocol | Implements every port with real files, processes and AppleScript. One `SessionSource` per AI tool (`ClaudeCodeSource`). |
 | `cerebro-hook` | tool | protocol | Tiny binary run by Claude Code on each hook event. Never prints, always exits 0. |
 | `cerebro-app` (`src-tauri/`) | presentation | domain, data, Tauri | Wiring, tray, panel window, commands, polling loop. |
 | `cerebro-cli` | presentation | domain, data | Exercise playground (see `EXERCISES.md`). |
@@ -44,13 +45,15 @@ Template mapping: `repositories/` (abstract) → `ports/`; `usecases/` → `usec
 2. **cerebro-hook** (registered in `~/.claude/settings.json`) writes `~/.cerebro/sessions/<id>.json`
    (status, including *waiting for permission*) and `~/.cerebro/agents/<session>/<agent>.json`.
 3. **The poller** (`src-tauri/src/poller.rs`) runs `ObserveSessions` every 1 s while the panel
-   is open, 2 s otherwise:
-   - read the registry, keep sessions whose pid is alive **and** started at the recorded time
-     (`ps` in UTC: a recycled pid is rejected);
-   - overlay *waiting* from hook records; fall back to hook records only if the registry is
-     unreadable, or empty while hooks show recent activity;
-   - attach subagents, prune orphans;
-   - cast rooms and characters (`strategies/casting.rs`), persisted in `~/.cerebro/assignments.json`.
+   is open, 2 s otherwise. The use case asks every `SessionSource` for its live sessions:
+   - **`ClaudeCodeSource`** (`cerebro-data/src/datasources/claude_code.rs`) reads the registry,
+     keeps sessions whose pid is alive **and** started at the recorded time (`ps` in UTC: a
+     recycled pid is rejected), overlays *waiting* from hook records, falls back to hook records
+     only if the registry is unreadable or empty while hooks show recent activity (reported as a
+     warning), then attaches subagents and prunes orphans;
+   - a failing source becomes a `SourceWarning` and doesn't hide the other sources' sessions;
+   - the domain then sorts every session by launch time and casts rooms and characters
+     (`strategies/casting.rs`), persisted in `~/.cerebro/assignments.json`.
 4. If the snapshot content changed, it is sent to the UI (`snapshot` event) and the tray is updated.
 5. **The UI** draws each scene on a canvas from PNG sprite sheets. Wandering is a pure function
    of `(actor id, time)`; one shared 10 fps clock runs only while the panel is visible.
@@ -83,6 +86,9 @@ are not clickable.
 - **Tauri** over Electron/Flutter: small footprint for an always-on tray app, Rust backend.
 - **Files over sockets** between hook and app: the hook works even when the app is closed,
   and stays a few dozen lines.
-- **Registry first, hooks as fallback**: the registry knows sessions opened before Cerebro and
-  their names; hooks protect against format changes and add the *waiting* status.
+- **Registry first, hooks as fallback** (inside `ClaudeCodeSource`): the registry knows sessions
+  opened before Cerebro and their names; hooks protect against format changes and add the
+  *waiting* status.
+- **Source-agnostic domain**: supporting another AI tool means writing its `SessionSource` in
+  `cerebro-data` and adding it to `sources` in the injector; the domain doesn't change.
 - **Deterministic randomness** everywhere: nothing to store per frame, stable across restarts.

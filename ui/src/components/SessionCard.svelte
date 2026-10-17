@@ -23,7 +23,7 @@
       `${scene.name} — ${room.name}`,
       scene.cwd,
       ...scene.actors.map((a, i) => `${names[i]}: ${a.agentKind ?? "main session"}`),
-      scene.focusable ? "Click to jump to this session" : "Hook-only session: cannot jump to it",
+      scene.focusable ? "Click to jump to this session" : "No process id for this session: cannot jump to it",
     ].join("\n"),
   );
 

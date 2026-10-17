@@ -2,44 +2,26 @@
 //!
 //! The data layer implements them; tests implement them with in-memory fakes.
 
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 use crate::DomainError;
-use crate::entities::{Agent, Assignments, Catalog, Session, SessionId};
+use crate::entities::{Assignments, Catalog, Session, ToolId};
 use crate::time::Timestamp;
 
-/// A session as read from a source, before process verification.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ObservedSession {
-    pub session: Session,
-    /// Process start time as recorded by the source (e.g. `"Thu Oct 15 08:43:57 2026"`),
-    /// used to detect a recycled pid.
-    pub process_start: Option<String>,
-}
-
-/// Lists live sessions (Claude Code registry, Cerebro hook records…).
+/// Live sessions of one AI tool. The data layer does whatever that tool needs (merging several
+/// files, checking processes, attaching subagents) and hands over sessions ready to display.
 pub trait SessionSource: Send + Sync {
-    fn observe(&self) -> Result<Vec<ObservedSession>, DomainError>;
+    /// The tool these sessions belong to, also used to attribute warnings.
+    fn tool(&self) -> ToolId;
+    fn observe(&self) -> Result<Observation, DomainError>;
 }
 
-/// Running subagents, recorded by the hook.
-pub trait AgentSource: Send + Sync {
-    fn agents_of(&self, session: &SessionId) -> Vec<Agent>;
-    /// Drops leftovers of sessions that are gone without a `SessionEnd` event.
-    fn forget_all_except(&self, alive: &[SessionId]);
-}
-
-/// What the OS says about a running process.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ProcessInfo {
-    /// Same format as `ObservedSession::process_start`; `None` if the platform can't tell.
-    pub start: Option<String>,
-}
-
-pub trait ProcessInspector: Send + Sync {
-    /// Returns an entry for each pid that is currently alive.
-    fn inspect(&self, pids: &[u32]) -> HashMap<u32, ProcessInfo>;
+/// What a [`SessionSource`] saw.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Observation {
+    pub sessions: Vec<Session>,
+    /// Set when the source answered with degraded data (e.g. a fallback), shown to the user.
+    pub warning: Option<String>,
 }
 
 pub trait AssignmentStore: Send + Sync {
@@ -76,7 +58,7 @@ pub enum FocusOutcome {
     NotFound,
 }
 
-/// State of Cerebro's entries in Claude Code's settings.
+/// State of Cerebro's hook entries in the tool's settings.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HookSetup {
     Installed,

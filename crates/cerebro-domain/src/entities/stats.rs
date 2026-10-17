@@ -22,7 +22,7 @@ pub fn compute_stats(snapshot: &Snapshot) -> Stats {
 mod tests {
     use super::*;
     use crate::entities::{
-        Agent, Cast, CharacterId, DataMode, Origin, RoomId, Scene, Session, SessionStatus,
+        Agent, Cast, CharacterId, RoomId, Scene, Session, SessionStatus, ToolId,
     };
     use crate::time::Timestamp;
 
@@ -30,13 +30,13 @@ mod tests {
         Scene {
             session: Session {
                 id: SessionId::new(id),
+                tool: ToolId::new("tool-a"),
                 pid: Some(1),
                 name: id.into(),
                 cwd: "/".into(),
                 status: SessionStatus::Busy,
                 started_at: Timestamp(started),
                 status_since: Timestamp(started),
-                origin: Origin::Registry,
                 agents: agents
                     .iter()
                     .map(|(agent_id, kind, agent_started)| Agent {
@@ -57,7 +57,7 @@ mod tests {
     fn snapshot(scenes: Vec<Scene>) -> Snapshot {
         Snapshot {
             scenes,
-            mode: DataMode::Registry,
+            warnings: vec![],
             taken_at: Timestamp(1_000),
         }
     }

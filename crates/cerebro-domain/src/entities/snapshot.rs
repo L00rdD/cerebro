@@ -1,20 +1,19 @@
-use super::Scene;
+use super::{Scene, ToolId};
 use crate::time::Timestamp;
 
-/// Which source the sessions were taken from.
+/// A session source that failed or returned degraded data. Its other sessions are still shown.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum DataMode {
-    /// Normal mode: Claude Code's registry, enriched by hooks.
-    Registry,
-    /// The registry is unreadable or looks broken; sessions come from hooks only.
-    HooksFallback { reason: String },
+pub struct SourceWarning {
+    pub tool: ToolId,
+    pub message: String,
 }
 
 /// Everything the UI needs at a given instant.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Snapshot {
     pub scenes: Vec<Scene>,
-    pub mode: DataMode,
+    /// Empty when every source answered normally.
+    pub warnings: Vec<SourceWarning>,
     pub taken_at: Timestamp,
 }
 
@@ -42,6 +41,6 @@ impl Snapshot {
 
     /// Same content regardless of when it was taken; used to skip redundant UI updates.
     pub fn same_content(&self, other: &Snapshot) -> bool {
-        self.scenes == other.scenes && self.mode == other.mode
+        self.scenes == other.scenes && self.warnings == other.warnings
     }
 }

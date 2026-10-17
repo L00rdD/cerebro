@@ -221,8 +221,8 @@ domain (which must not read the environment) or in the CLI? The UI does it in `s
 1. Implement `scan()`. Files that are not `.json` are *not* problems.
 2. Derive `thiserror::Error` on `RegistryProblem` with readable messages (add `thiserror` to the crate).
 3. Make `observe()` call `scan()` and log the problems with `eprintln!`.
-4. Stretch: surface the problem count in the UI. Add a field to `DataMode` or `Snapshot`,
-   map it in `src-tauri/src/dto.rs` and `ui/src/lib/api/types.ts`, show it in `Banners.svelte`.
+4. Stretch: surface the problem count in the UI. `ClaudeCodeSource` can report it through the
+   `warning` of its `Observation`, which already reaches `Banners.svelte` as a `SourceWarning`.
 
 **Done when** `scan_reports_malformed_files` passes.
 

@@ -2,11 +2,11 @@ use std::fs;
 use std::path::PathBuf;
 
 use cerebro_domain::DomainError;
-use cerebro_domain::entities::{Origin, Session, SessionId, SessionStatus};
-use cerebro_domain::ports::{ObservedSession, SessionSource};
+use cerebro_domain::entities::{Session, SessionId, SessionStatus, ToolId};
 use cerebro_domain::time::Timestamp;
 use cerebro_protocol::{HookSession, HookStatus, now_ms, read_json};
 
+use super::{CLAUDE_CODE, ObservedSession, SessionReader};
 use crate::models::folder_name_of;
 
 /// Records older than this belong to sessions that died without a `SessionEnd`.
@@ -23,7 +23,7 @@ impl HookSessionSource {
     }
 }
 
-impl SessionSource for HookSessionSource {
+impl SessionReader for HookSessionSource {
     fn observe(&self) -> Result<Vec<ObservedSession>, DomainError> {
         let Ok(entries) = fs::read_dir(&self.dir) else {
             return Ok(Vec::new()); // Hooks not installed yet: nothing to report.
@@ -45,6 +45,7 @@ fn to_session(record: HookSession) -> Session {
     let cwd = PathBuf::from(&record.cwd);
     Session {
         id: SessionId::new(record.session_id),
+        tool: ToolId::new(CLAUDE_CODE),
         pid: None,
         name: folder_name_of(&cwd),
         cwd,
@@ -55,7 +56,6 @@ fn to_session(record: HookSession) -> Session {
         },
         started_at: Timestamp(record.started_at_ms),
         status_since: Timestamp(record.status_since_ms),
-        origin: Origin::Hooks,
         agents: Vec::new(),
     }
 }
@@ -93,7 +93,7 @@ mod tests {
     fn missing_directory_means_no_sessions() {
         assert_eq!(
             HookSessionSource::new("/nope").observe().unwrap(),
-            [] as [cerebro_domain::ports::ObservedSession; 0]
+            [] as [ObservedSession; 0]
         );
     }
 }
