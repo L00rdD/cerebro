@@ -288,13 +288,11 @@ stdout, then exit:
 | `Outdated` | `hooks: outdated (they point to another cerebro-hook or miss some events)` | 1 |
 | `Err(error)` | nothing on stdout; `cannot read the hooks: {error}` on stderr | 1 |
 
-**Careful with the hook binary path.** `ManageHooks` is built with the path of the `cerebro-hook`
-binary it expects, and `status()` compares it with the command written in
-`~/.claude/settings.json`. The app's `hook_binary_path()` looks next to the running executable.
-Copied as is into the CLI, it expects `target/debug/cerebro-hook`, while hooks installed by the
-app point to `…/Cerebro.app/Contents/MacOS/cerebro-hook`: the CLI would say `outdated` when the
-app says everything is fine. Decide what the CLI should compare against and write it down in a
-comment. Any reasoned choice is accepted; reporting a false `outdated` is not.
+**The hook binary path.** `ManageHooks` is built with the path of the `cerebro-hook` it expects,
+and `status()` compares it with the command written in `~/.claude/settings.json`. The CLI follows
+the same rule as the app (`hook_binary_path()` in the app's injector): the expected hook is the one
+next to the running executable. So a CLI run from `target/debug` reports `outdated` when the hooks
+point to an installed app's hook: that is the expected result, not a bug.
 
 **4. `cerebro stats`.** Leave it as is (`todo!()` or a "not implemented yet" message):
 exercise 5 implements it.
