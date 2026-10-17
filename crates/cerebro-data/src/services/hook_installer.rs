@@ -32,14 +32,14 @@ impl ClaudeSettingsHookInstaller {
 
     fn read_settings(&self) -> Result<Value, DomainError> {
         match fs::read_to_string(&self.settings_file) {
-            Ok(text) => serde_json::from_str(&text).map_err(|e| {
+            Ok(text) => serde_json::from_str(&text).map_err(|error| {
                 DomainError::Platform(format!(
-                    "{} is not valid JSON: {e}",
+                    "{} is not valid JSON: {error}",
                     self.settings_file.display()
                 ))
             }),
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(json!({})),
-            Err(e) => Err(DomainError::Platform(e.to_string())),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(json!({})),
+            Err(error) => Err(DomainError::Platform(error.to_string())),
         }
     }
 }
@@ -55,13 +55,13 @@ impl HookInstaller for ClaudeSettingsHookInstaller {
         let complete = HOOK_EVENTS.iter().all(|event| {
             commands
                 .iter()
-                .filter(|(e, _)| e == event)
-                .map(|(_, c)| c)
+                .filter(|(hook_event, _)| hook_event == event)
+                .map(|(_, command)| command)
                 .eq([&expected])
         });
-        let no_strays = commands
-            .iter()
-            .all(|(e, c)| *c == expected && HOOK_EVENTS.contains(&e.as_str()));
+        let no_strays = commands.iter().all(|(hook_event, command)| {
+            *command == expected && HOOK_EVENTS.contains(&hook_event.as_str())
+        });
         Ok(if complete && no_strays {
             HookSetup::Installed
         } else {
@@ -70,7 +70,7 @@ impl HookInstaller for ClaudeSettingsHookInstaller {
     }
 
     fn install(&self) -> Result<(), DomainError> {
-        let platform = |e: std::io::Error| DomainError::Platform(e.to_string());
+        let platform = |error: std::io::Error| DomainError::Platform(error.to_string());
         let mut settings = self.read_settings()?;
         if self.settings_file.exists() {
             let backup = self
@@ -99,7 +99,7 @@ impl HookInstaller for ClaudeSettingsHookInstaller {
             fs::create_dir_all(parent).map_err(platform)?;
         }
         let text = serde_json::to_string_pretty(&settings)
-            .map_err(|e| DomainError::Platform(e.to_string()))?;
+            .map_err(|error| DomainError::Platform(error.to_string()))?;
         fs::write(&self.settings_file, text + "\n").map_err(platform)
     }
 }
@@ -137,7 +137,7 @@ fn remove_cerebro_entries(hooks: &mut Map<String, Value>) {
                     !hook
                         .get("command")
                         .and_then(Value::as_str)
-                        .is_some_and(|c| c.contains(HOOK_MARKER))
+                        .is_some_and(|command| command.contains(HOOK_MARKER))
                 });
             }
         }
@@ -145,10 +145,14 @@ fn remove_cerebro_entries(hooks: &mut Map<String, Value>) {
             group
                 .get("hooks")
                 .and_then(Value::as_array)
-                .is_none_or(|l| !l.is_empty())
+                .is_none_or(|hook_list| !hook_list.is_empty())
         });
     }
-    hooks.retain(|_, groups| groups.as_array().is_none_or(|g| !g.is_empty()));
+    hooks.retain(|_, groups| {
+        groups
+            .as_array()
+            .is_none_or(|group_list| !group_list.is_empty())
+    });
 }
 
 #[cfg(test)]
@@ -200,8 +204,9 @@ mod tests {
         assert!(!text.contains("cerebro-hook.sh"));
         assert_eq!(settings["hooks"]["Stop"].as_array().unwrap().len(), 2);
         // A backup of the original file is kept next to it.
-        let backups = fs::read_dir(dir.path()).unwrap().filter(|e| {
-            e.as_ref()
+        let backups = fs::read_dir(dir.path()).unwrap().filter(|entry| {
+            entry
+                .as_ref()
                 .unwrap()
                 .file_name()
                 .to_string_lossy()

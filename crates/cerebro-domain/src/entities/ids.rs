@@ -18,8 +18,8 @@ macro_rules! id_type {
         }
 
         impl fmt::Display for $name {
-            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                f.write_str(&self.0)
+            fn fmt(&self, output: &mut fmt::Formatter<'_>) -> fmt::Result {
+                output.write_str(&self.0)
             }
         }
     };

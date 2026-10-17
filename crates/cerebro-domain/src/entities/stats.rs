@@ -39,10 +39,10 @@ mod tests {
                 origin: Origin::Registry,
                 agents: agents
                     .iter()
-                    .map(|(a, kind, at)| Agent {
-                        id: AgentId::new(*a),
+                    .map(|(agent_id, kind, agent_started)| Agent {
+                        id: AgentId::new(*agent_id),
                         kind: (*kind).into(),
-                        started_at: Timestamp(*at),
+                        started_at: Timestamp(*agent_started),
                     })
                     .collect(),
             },

@@ -50,7 +50,8 @@ pub fn tty_of(runner: &dyn CommandRunner, pid: u32) -> Option<String> {
         .run("ps", &["-o", "tty=", "-p", &pid.to_string()])
         .ok()?;
     let tty = output.stdout.trim();
-    let valid = !tty.is_empty() && tty != "??" && tty.chars().all(|c| c.is_ascii_alphanumeric());
+    let valid =
+        !tty.is_empty() && tty != "??" && tty.chars().all(|symbol| symbol.is_ascii_alphanumeric());
     valid.then(|| format!("/dev/{tty}"))
 }
 

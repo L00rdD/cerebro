@@ -28,7 +28,7 @@ impl AssignmentStore for JsonAssignmentStore {
 
     fn save(&self, assignments: &Assignments) -> Result<(), DomainError> {
         write_json_atomic(&self.file, &AssignmentsFile::from(assignments))
-            .map_err(|e| DomainError::Persistence(e.to_string()))
+            .map_err(|error| DomainError::Persistence(error.to_string()))
     }
 }
 
@@ -43,13 +43,15 @@ mod tests {
         let store = JsonAssignmentStore::new(dir.path().join("assignments.json"));
         assert_eq!(store.load(), Assignments::default());
 
-        let mut a = Assignments::default();
-        a.rooms.insert(SessionId::new("s"), RoomId::new("garage"));
-        a.characters.insert(
+        let mut assignments = Assignments::default();
+        assignments
+            .rooms
+            .insert(SessionId::new("s"), RoomId::new("garage"));
+        assignments.characters.insert(
             ActorKey::Lead(SessionId::new("s")),
             CharacterId::new("doop"),
         );
-        store.save(&a).unwrap();
-        assert_eq!(store.load(), a);
+        store.save(&assignments).unwrap();
+        assert_eq!(store.load(), assignments);
     }
 }

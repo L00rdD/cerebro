@@ -62,7 +62,7 @@ pub fn parse_ps_line(line: &str) -> Option<(u32, String)> {
     let line = line.trim();
     let (pid, rest) = line.split_once(char::is_whitespace)?;
     let start = rest.split_whitespace().collect::<Vec<_>>().join(" ");
-    Some((pid.parse().ok()?, start)).filter(|(_, s)| !s.is_empty())
+    Some((pid.parse().ok()?, start)).filter(|(_, start_time)| !start_time.is_empty())
 }
 
 /// A `ps` line that borrows from the original text instead of copying it (EXERCISE 7).
