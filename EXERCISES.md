@@ -50,8 +50,8 @@ panicking. That's normal, it's your starting point.
 
 ### 4. Write the code until the tests pass
 
-Replace the `todo!()` (and the `let _ = f;` line next to it, which only silences a warning while
-`f` is unused). Run the same command after each change. When it ends with
+Replace the `todo!()` (and the `let _ = output;` line next to it, which only silences a warning while
+`output` is unused). Run the same command after each change. When it ends with
 `test result: ok. 2 passed`, you're done.
 
 - Read compiler errors to the end: the `help:` line often contains the fix.
@@ -148,13 +148,13 @@ which says how to write the value as text. Implement it and you get, for free, `
    personal-f4  waiting  0 agents  /Users/me/personal
    ```
 
-**How `fmt` works.** You don't return a `String`: you *write* into `f` (the `Formatter`) with the
+**How `fmt` works.** You don't return a `String`: you *write* into `output` (the `Formatter`) with the
 `write!` macro, which takes the same arguments as `format!` and returns the `std::fmt::Result`
 that `fmt` must return:
 
 ```rust
-fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "hello {}", 42)
+fn fmt(&self, output: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(output, "hello {}", 42)
 }
 ```
 
@@ -176,10 +176,10 @@ domain (which must not read the environment) or in the CLI? The UI does it in `s
 
 <details><summary>Hints</summary>
 
-- `write!(f, "{}", self.as_str())` is the whole body of the first `fmt`.
+- `write!(output, "{}", self.as_str())` is the whole body of the first `fmt`.
 - Inside `Display for Session`, `self.status` implements `Display` once step 3 is done, so `{}` works on it.
-- `let agents = match self.agents.len() { 1 => "1 agent".to_string(), n => format!("{n} agents") };`
-- Then: `write!(f, "{}  {}  {agents}  {}", self.name, self.status, self.cwd.display())`.
+- `let agents = match self.agents.len() { 1 => "1 agent".to_string(), count => format!("{count} agents") };`
+- Then: `write!(output, "{}  {}  {agents}  {}", self.name, self.status, self.cwd.display())`.
 </details>
 
 ### Exercise 3: the `cerebro` CLI
