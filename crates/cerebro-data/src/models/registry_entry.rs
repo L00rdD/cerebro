@@ -1,9 +1,10 @@
 use std::path::{Path, PathBuf};
 
-use cerebro_domain::entities::{Origin, Session, SessionId, SessionStatus};
-use cerebro_domain::ports::ObservedSession;
+use cerebro_domain::entities::{Session, SessionId, SessionStatus, ToolId};
 use cerebro_domain::time::Timestamp;
 use serde::Deserialize;
+
+use crate::datasources::{CLAUDE_CODE, ObservedSession};
 
 /// One `~/.claude/sessions/<pid>.json` file, written by Claude Code itself.
 ///
@@ -30,13 +31,13 @@ impl From<RegistryEntry> for ObservedSession {
         Self {
             session: Session {
                 id: SessionId::new(entry.session_id),
+                tool: ToolId::new(CLAUDE_CODE),
                 pid: Some(entry.pid),
                 name: entry.name.unwrap_or_else(|| folder_name_of(&cwd)),
                 status: SessionStatus::parse(entry.status.as_deref().unwrap_or("unknown")),
                 status_since: entry.status_updated_at.map_or(started_at, Timestamp),
                 started_at,
                 cwd,
-                origin: Origin::Registry,
                 agents: Vec::new(),
             },
             process_start: entry.proc_start,

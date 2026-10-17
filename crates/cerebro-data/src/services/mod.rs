@@ -8,4 +8,7 @@ mod process_inspector;
 pub use clock::SystemClock;
 pub use command_runner::{CommandOutput, CommandRunner, SystemCommandRunner};
 pub use hook_installer::ClaudeSettingsHookInstaller;
-pub use process_inspector::{PsLine, PsProcessInspector, parse_ps_line, parse_ps_line_borrowed};
+pub use process_inspector::{
+    ProcessInfo, ProcessInspector, PsLine, PsProcessInspector, parse_ps_line,
+    parse_ps_line_borrowed,
+};

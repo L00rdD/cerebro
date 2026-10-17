@@ -26,11 +26,15 @@ macro_rules! id_type {
 }
 
 id_type!(
-    /// Claude Code session id (a UUID).
+    /// AI coding tool a session runs in, e.g. `claude-code`. Chosen by the data source.
+    ToolId
+);
+id_type!(
+    /// Session id, unique within its tool (a UUID for Claude Code).
     SessionId
 );
 id_type!(
-    /// Subagent id, unique within Claude Code.
+    /// Subagent id, unique within its tool.
     AgentId
 );
 id_type!(

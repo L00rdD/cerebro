@@ -37,14 +37,10 @@ pub fn start(app: AppHandle) {
 /// Observes sessions once and pushes the result to the UI and the tray if it changed.
 pub fn refresh(app: &AppHandle) {
     let state = app.state::<AppState>();
-    match state.container.observe.execute() {
-        Ok(snapshot) => {
-            let dto = SnapshotDto::from(&snapshot);
-            if state.replace_snapshot(snapshot) {
-                tray::update(app, &dto.counts);
-                let _ = app.emit("snapshot", &dto);
-            }
-        }
-        Err(error) => eprintln!("cerebro: observe failed: {error}"),
+    let snapshot = state.container.observe.execute();
+    let dto = SnapshotDto::from(&snapshot);
+    if state.replace_snapshot(snapshot) {
+        tray::update(app, &dto.counts);
+        let _ = app.emit("snapshot", &dto);
     }
 }

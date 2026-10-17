@@ -1,6 +1,6 @@
 //! View models sent to the UI. The domain stays free of serde; mapping happens here.
 
-use cerebro_domain::entities::{DataMode, Origin, Scene, Snapshot};
+use cerebro_domain::entities::{Scene, Snapshot, SourceWarning};
 use cerebro_domain::ports::{FocusOutcome, HookSetup};
 use serde::Serialize;
 
@@ -8,16 +8,16 @@ use serde::Serialize;
 #[serde(rename_all = "camelCase")]
 pub struct SnapshotDto {
     pub scenes: Vec<SceneDto>,
-    pub mode: ModeDto,
+    pub warnings: Vec<WarningDto>,
     pub counts: CountsDto,
     pub taken_at: u64,
 }
 
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase", tag = "kind")]
-pub enum ModeDto {
-    Registry,
-    HooksFallback { reason: String },
+#[serde(rename_all = "camelCase")]
+pub struct WarningDto {
+    pub tool: String,
+    pub message: String,
 }
 
 #[derive(Serialize)]
@@ -33,12 +33,14 @@ pub struct CountsDto {
 #[serde(rename_all = "camelCase")]
 pub struct SceneDto {
     pub id: String,
+    /// AI tool the session runs in, e.g. `claude-code`.
+    pub tool: String,
     pub name: String,
     pub cwd: String,
     pub status: String,
     pub status_since: u64,
     pub started_at: u64,
-    /// False for hook-only sessions (no pid to follow).
+    /// False when the source reports no pid to follow.
     pub focusable: bool,
     pub room: String,
     pub actors: Vec<ActorDto>,
@@ -58,12 +60,7 @@ impl From<&Snapshot> for SnapshotDto {
     fn from(snapshot: &Snapshot) -> Self {
         Self {
             scenes: snapshot.scenes.iter().map(SceneDto::from).collect(),
-            mode: match &snapshot.mode {
-                DataMode::Registry => ModeDto::Registry,
-                DataMode::HooksFallback { reason } => ModeDto::HooksFallback {
-                    reason: reason.clone(),
-                },
-            },
+            warnings: snapshot.warnings.iter().map(WarningDto::from).collect(),
             counts: CountsDto {
                 sessions: snapshot.scenes.len(),
                 busy: snapshot.busy_count(),
@@ -71,6 +68,15 @@ impl From<&Snapshot> for SnapshotDto {
                 characters: snapshot.character_count(),
             },
             taken_at: snapshot.taken_at.millis(),
+        }
+    }
+}
+
+impl From<&SourceWarning> for WarningDto {
+    fn from(warning: &SourceWarning) -> Self {
+        Self {
+            tool: warning.tool.to_string(),
+            message: warning.message.clone(),
         }
     }
 }
@@ -94,12 +100,13 @@ impl From<&Scene> for SceneDto {
             });
         Self {
             id: session.id.to_string(),
+            tool: session.tool.to_string(),
             name: session.name.clone(),
             cwd: session.cwd.display().to_string(),
             status: session.status.as_str().to_owned(),
             status_since: session.status_since.millis(),
             started_at: session.started_at.millis(),
-            focusable: session.origin == Origin::Registry && session.pid.is_some(),
+            focusable: session.pid.is_some(),
             room: scene.cast.room.to_string(),
             actors: std::iter::once(lead).chain(agents).collect(),
         }

@@ -1,9 +1,20 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use cerebro_domain::ports::{ProcessInfo, ProcessInspector};
-
 use super::CommandRunner;
+
+/// What the OS says about a running process.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProcessInfo {
+    /// Same format as Claude Code's `procStart`; `None` if the platform can't tell.
+    pub start: Option<String>,
+}
+
+/// Tells which pids are alive, so a stale registry entry or a recycled pid can be rejected.
+pub trait ProcessInspector: Send + Sync {
+    /// Returns an entry for each pid that is currently alive.
+    fn inspect(&self, pids: &[u32]) -> HashMap<u32, ProcessInfo>;
+}
 
 /// Asks `ps` (macOS, Linux) for the start time of all pids in one call.
 pub struct PsProcessInspector {
