@@ -79,16 +79,16 @@ impl Session {
 
 /// EXERCISE 2: `busy`, `idle`, `waiting`, or the raw text for unknown statuses.
 impl std::fmt::Display for SessionStatus {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let _ = f;
+    fn fmt(&self, output: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let _ = output;
         todo!("Exercise 2: write the status")
     }
 }
 
 /// EXERCISE 2: one line for the CLI, e.g. `personal-f4  busy  2 agents  ~/personal`.
 impl std::fmt::Display for Session {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let _ = f;
+    fn fmt(&self, output: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let _ = output;
         todo!("Exercise 2: describe session {}", self.id)
     }
 }
@@ -108,8 +108,8 @@ mod tests {
             status_since: Timestamp(0),
             origin: Origin::Registry,
             agents: (0..agents)
-                .map(|i| Agent {
-                    id: AgentId::new(format!("a{i}")),
+                .map(|index| Agent {
+                    id: AgentId::new(format!("a{index}")),
                     kind: "Explore".into(),
                     started_at: Timestamp(0),
                 })

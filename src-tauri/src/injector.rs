@@ -55,6 +55,6 @@ fn hook_binary_path() -> PathBuf {
     };
     std::env::current_exe()
         .ok()
-        .and_then(|exe| exe.parent().map(|dir| dir.join(name)))
+        .and_then(|executable| executable.parent().map(|dir| dir.join(name)))
         .unwrap_or_else(|| PathBuf::from(name))
 }

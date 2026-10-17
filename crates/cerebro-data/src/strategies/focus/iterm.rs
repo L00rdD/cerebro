@@ -33,7 +33,7 @@ return "missing""#
         );
         let output = runner
             .run("osascript", &["-e", &script])
-            .map_err(|e| DomainError::Platform(e.to_string()))?;
+            .map_err(|error| DomainError::Platform(error.to_string()))?;
         if !output.success {
             return Err(DomainError::Platform(format!(
                 "iTerm2 AppleScript failed: {}",

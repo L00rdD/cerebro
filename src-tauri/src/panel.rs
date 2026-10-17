@@ -39,7 +39,7 @@ pub fn toggle(app: &AppHandle) {
         .last_hidden
         .lock()
         .unwrap_or_else(PoisonError::into_inner)
-        .is_some_and(|at| at.elapsed() < REOPEN_DEBOUNCE);
+        .is_some_and(|hidden_at| hidden_at.elapsed() < REOPEN_DEBOUNCE);
     if !just_hidden {
         show(app);
     }

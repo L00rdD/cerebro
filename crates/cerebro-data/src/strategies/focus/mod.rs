@@ -52,7 +52,7 @@ impl MacFocuser {
         let output = self
             .runner
             .run("open", &["-a", &host.bundle_path])
-            .map_err(|e| DomainError::Platform(e.to_string()))?;
+            .map_err(|error| DomainError::Platform(error.to_string()))?;
         if output.success {
             Ok(())
         } else {
@@ -67,7 +67,9 @@ impl TerminalFocuser for MacFocuser {
             return Ok(FocusOutcome::NotFound);
         };
         if let (Some(selector), Some(tty)) = (
-            self.selectors.iter().find(|s| s.handles(&host.bundle_path)),
+            self.selectors
+                .iter()
+                .find(|candidate| candidate.handles(&host.bundle_path)),
             tty_of(self.runner.as_ref(), target.pid),
         ) && selector.select(self.runner.as_ref(), &tty)?
         {
@@ -128,8 +130,8 @@ pub(crate) mod fake {
             let stdout = self
                 .answers
                 .iter()
-                .find(|(k, _)| key.starts_with(k.as_str()))
-                .map(|(_, v)| v.clone());
+                .find(|(command_prefix, _)| key.starts_with(command_prefix.as_str()))
+                .map(|(_, answer)| answer.clone());
             Ok(CommandOutput {
                 success: true,
                 stdout: stdout.unwrap_or_default(),
@@ -176,7 +178,7 @@ mod tests {
             }
         );
         let calls = runner.calls.lock().unwrap();
-        assert!(calls.iter().any(|c| c.contains("/dev/ttys003")));
+        assert!(calls.iter().any(|call| call.contains("/dev/ttys003")));
     }
 
     #[test]
@@ -195,7 +197,7 @@ mod tests {
                 .lock()
                 .unwrap()
                 .iter()
-                .any(|c| c == "open -a /Applications/iTerm.app")
+                .any(|call| call == "open -a /Applications/iTerm.app")
         );
     }
 

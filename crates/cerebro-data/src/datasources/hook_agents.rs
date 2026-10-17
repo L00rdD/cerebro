@@ -41,10 +41,10 @@ impl AgentSource for HookAgentSource {
                 started_at: Timestamp(record.started_at_ms),
             })
             .collect();
-        agents.sort_by(|a, b| {
-            a.started_at
-                .cmp(&b.started_at)
-                .then_with(|| a.id.cmp(&b.id))
+        agents.sort_by(|left, right| {
+            left.started_at
+                .cmp(&right.started_at)
+                .then_with(|| left.id.cmp(&right.id))
         });
         agents
     }
@@ -60,7 +60,7 @@ impl AgentSource for HookAgentSource {
             }
             let age = entry
                 .metadata()
-                .and_then(|m| m.modified())
+                .and_then(|metadata| metadata.modified())
                 .ok()
                 .and_then(|modified| SystemTime::now().duration_since(modified).ok())
                 .unwrap_or_default();
@@ -80,17 +80,17 @@ mod tests {
     fn lists_agents_oldest_first() {
         let dir = tempfile::tempdir().unwrap();
         let paths = Paths::new(dir.path());
-        for (id, kind, at) in [("b", "Plan", now_ms()), ("a", "Explore", now_ms() - 5000)] {
+        for (id, kind, started_at) in [("b", "Plan", now_ms()), ("a", "Explore", now_ms() - 5000)] {
             let agent = HookAgent {
                 version: FORMAT_VERSION,
                 agent_id: id.into(),
                 agent_type: kind.into(),
-                started_at_ms: at,
+                started_at_ms: started_at,
             };
             write_json_atomic(&paths.agent_file("s1", id), &agent).unwrap();
         }
         let agents = HookAgentSource::new(paths).agents_of(&SessionId::new("s1"));
-        let kinds: Vec<_> = agents.iter().map(|a| a.kind.as_str()).collect();
+        let kinds: Vec<_> = agents.iter().map(|agent| agent.kind.as_str()).collect();
         assert_eq!(kinds, ["Explore", "Plan"]);
     }
 

@@ -32,7 +32,7 @@ pub async fn focus_session(app: AppHandle, session_id: String) -> Result<FocusDt
             .container
             .focus
             .execute(&scene.session)
-            .map_err(|e| e.to_string())?;
+            .map_err(|error| error.to_string())?;
         let dto = FocusDto::from(outcome);
         if !matches!(dto, FocusDto::NotFound) {
             panel::hide(&app);
@@ -40,7 +40,7 @@ pub async fn focus_session(app: AppHandle, session_id: String) -> Result<FocusDt
         Ok(dto)
     })
     .await
-    .map_err(|e| e.to_string())?
+    .map_err(|error| error.to_string())?
 }
 
 #[tauri::command]
@@ -54,7 +54,7 @@ pub fn open_folder(
         .ok_or_else(|| format!("unknown session {session_id}"))?;
     app.opener()
         .open_path(scene.session.cwd.display().to_string(), None::<&str>)
-        .map_err(|e| e.to_string())
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -64,7 +64,7 @@ pub fn hook_status(state: State<'_, AppState>) -> Result<&'static str, String> {
         .hooks
         .status()
         .map(hook_setup_name)
-        .map_err(|e| e.to_string())
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -74,12 +74,14 @@ pub fn install_hooks(state: State<'_, AppState>) -> Result<&'static str, String>
         .hooks
         .install()
         .map(hook_setup_name)
-        .map_err(|e| e.to_string())
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
 pub fn autostart_enabled(app: AppHandle) -> Result<bool, String> {
-    app.autolaunch().is_enabled().map_err(|e| e.to_string())
+    app.autolaunch()
+        .is_enabled()
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -90,8 +92,8 @@ pub fn set_autostart(app: AppHandle, enabled: bool) -> Result<bool, String> {
     } else {
         launcher.disable()
     };
-    result.map_err(|e| e.to_string())?;
-    launcher.is_enabled().map_err(|e| e.to_string())
+    result.map_err(|error| error.to_string())?;
+    launcher.is_enabled().map_err(|error| error.to_string())
 }
 
 #[tauri::command]

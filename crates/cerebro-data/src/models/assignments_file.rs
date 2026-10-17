@@ -12,18 +12,18 @@ pub struct AssignmentsFile {
 }
 
 impl From<&Assignments> for AssignmentsFile {
-    fn from(a: &Assignments) -> Self {
+    fn from(assignments: &Assignments) -> Self {
         Self {
             version: 1,
-            rooms: a
+            rooms: assignments
                 .rooms
                 .iter()
-                .map(|(s, r)| (s.to_string(), r.to_string()))
+                .map(|(session_id, room_id)| (session_id.to_string(), room_id.to_string()))
                 .collect(),
-            characters: a
+            characters: assignments
                 .characters
                 .iter()
-                .map(|(k, c)| (k.encode(), c.to_string()))
+                .map(|(actor_key, character_id)| (actor_key.encode(), character_id.to_string()))
                 .collect(),
         }
     }
@@ -35,12 +35,17 @@ impl From<AssignmentsFile> for Assignments {
             rooms: file
                 .rooms
                 .into_iter()
-                .map(|(s, r)| (SessionId::new(s), RoomId::new(r)))
+                .map(|(session_id, room_id)| (SessionId::new(session_id), RoomId::new(room_id)))
                 .collect(),
             characters: file
                 .characters
                 .into_iter()
-                .filter_map(|(k, c)| Some((ActorKey::decode(&k)?, CharacterId::new(c))))
+                .filter_map(|(actor_key, character_id)| {
+                    Some((
+                        ActorKey::decode(&actor_key)?,
+                        CharacterId::new(character_id),
+                    ))
+                })
                 .collect(),
         }
     }
