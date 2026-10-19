@@ -24,13 +24,17 @@ use tauri_plugin_autostart::MacosLauncher;
 use crate::state::AppState;
 
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
             None,
         ))
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_positioner::init())
+        .plugin(tauri_plugin_positioner::init());
+    // The panel is an NSPanel on macOS, so it can open over full-screen apps.
+    #[cfg(target_os = "macos")]
+    let builder = builder.plugin(tauri_nspanel::init());
+    builder
         .invoke_handler(tauri::generate_handler![
             commands::get_snapshot,
             commands::focus_session,

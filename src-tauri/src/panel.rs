@@ -9,6 +9,16 @@ use tauri_plugin_positioner::{Position, WindowExt};
 
 use crate::state::AppState;
 
+#[cfg(target_os = "macos")]
+tauri_nspanel::tauri_panel! {
+    panel!(TrayPanel {
+        config: {
+            can_become_key_window: true,
+            is_floating_panel: true
+        }
+    })
+}
+
 pub const LABEL: &str = "panel";
 pub const WIDTH: f64 = 446.0;
 /// A tray click first blurs (hides) the panel, then toggles it: ignore that toggle.
@@ -20,12 +30,34 @@ fn window(app: &AppHandle) -> Option<WebviewWindow> {
 
 pub fn attach(app: &AppHandle) {
     let Some(panel) = window(app) else { return };
+    #[cfg(target_os = "macos")]
+    float_over_full_screen_apps(&panel);
     let handle = app.clone();
     panel.on_window_event(move |event| {
         if let WindowEvent::Focused(false) = event {
             hide(&handle);
         }
     });
+}
+
+/// macOS never shows an ordinary window over another app's full-screen space: the panel
+/// would open on the desktop, out of sight. Like the menu bar's own popovers, it becomes a
+/// non-activating panel that joins every space, full-screen ones included.
+#[cfg(target_os = "macos")]
+fn float_over_full_screen_apps(panel: &WebviewWindow) {
+    use tauri_nspanel::{CollectionBehavior, PanelLevel, StyleMask, WebviewWindowExt};
+
+    let Ok(panel) = panel.to_panel::<TrayPanel>() else {
+        return;
+    };
+    panel.set_level(PanelLevel::Status.value());
+    panel.set_collection_behavior(
+        CollectionBehavior::new()
+            .can_join_all_spaces()
+            .full_screen_auxiliary()
+            .value(),
+    );
+    let _ = panel.add_style_mask(StyleMask::empty().nonactivating_panel().value());
 }
 
 pub fn toggle(app: &AppHandle) {
@@ -48,8 +80,7 @@ pub fn toggle(app: &AppHandle) {
 pub fn show(app: &AppHandle) {
     let Some(panel) = window(app) else { return };
     let _ = panel.move_window(Position::TrayBottomCenter);
-    let _ = panel.show();
-    let _ = panel.set_focus();
+    reveal(&panel);
     set_visible(app, true);
     // Fresh data right away instead of waiting for the next slow tick.
     crate::poller::refresh(app);
@@ -75,6 +106,26 @@ pub fn resize(app: &AppHandle, height: f64) {
     if panel.is_visible().unwrap_or(false) {
         let _ = panel.move_window(Position::TrayBottomCenter);
     }
+}
+
+/// Activating the app would pull the user out of a full-screen space: on macOS the panel
+/// only takes the keyboard focus.
+#[cfg(target_os = "macos")]
+fn reveal(panel: &WebviewWindow) {
+    use tauri_nspanel::ManagerExt;
+
+    if let Ok(ns_panel) = panel.app_handle().get_webview_panel(LABEL) {
+        ns_panel.show_and_make_key();
+    } else {
+        let _ = panel.show();
+        let _ = panel.set_focus();
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn reveal(panel: &WebviewWindow) {
+    let _ = panel.show();
+    let _ = panel.set_focus();
 }
 
 fn set_visible(app: &AppHandle, visible: bool) {
