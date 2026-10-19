@@ -152,20 +152,30 @@ mod tests {
 
     #[test]
     fn rooms_are_unique_while_available() {
+        // Arrange
         let catalog = catalog(10, 3);
         let sessions: Vec<_> = (0..3)
             .map(|index| session(&format!("s{index}"), index, &[]))
             .collect();
+
+        // Act
         let (casts, _) = cast_all(&catalog, &mut Assignments::default(), &sessions);
+
+        // Assert
         let rooms: HashSet<_> = casts.iter().map(|cast| &cast.room).collect();
         assert_eq!(rooms.len(), 3);
     }
 
     #[test]
     fn characters_are_unique_within_a_room() {
+        // Arrange
         let catalog = catalog(4, 1);
         let sessions = [session("s", 0, &["a", "b", "c"])];
+
+        // Act
         let (casts, _) = cast_all(&catalog, &mut Assignments::default(), &sessions);
+
+        // Assert
         let mut all = vec![casts[0].lead.clone()];
         all.extend(casts[0].agents.clone());
         assert_eq!(all.iter().collect::<HashSet<_>>().len(), 4);
@@ -174,10 +184,15 @@ mod tests {
     #[test]
     fn picks_survive_when_another_actor_leaves() {
         // Regression for report item m3: removing an agent must not reshuffle the others.
+        // Arrange
         let catalog = catalog(3, 3);
         let mut memory = Assignments::default();
         let (before, _) = cast_all(&catalog, &mut memory, &[session("s", 0, &["a", "b"])]);
+
+        // Act
         let (after, _) = cast_all(&catalog, &mut memory, &[session("s", 0, &["b"])]);
+
+        // Assert
         assert_eq!(after[0].lead, before[0].lead);
         assert_eq!(after[0].agents[0], before[0].agents[1]);
         assert_eq!(after[0].room, before[0].room);
@@ -185,35 +200,58 @@ mod tests {
 
     #[test]
     fn older_session_keeps_its_room_when_a_newer_one_arrives() {
+        // Arrange
         let catalog = catalog(5, 5);
         let mut memory = Assignments::default();
         let (first, _) = cast_all(&catalog, &mut memory, &[session("old", 0, &[])]);
+
+        // Act
         let (second, _) = cast_all(
             &catalog,
             &mut memory,
             &[session("new", 5, &[]), session("old", 0, &[])],
         );
+
+        // Assert
         assert_eq!(second[1].room, first[0].room);
         assert_ne!(second[0].room, second[1].room);
     }
 
     #[test]
     fn dead_entries_are_forgotten_and_change_is_reported() {
+        // Arrange
         let catalog = catalog(5, 5);
         let mut memory = Assignments::default();
+
+        // Act
         let (_, changed) = cast_all(&catalog, &mut memory, &[session("s", 0, &["a"])]);
+
+        // Assert
         assert!(changed);
+
+        // Act
         let (_, changed) = cast_all(&catalog, &mut memory, &[session("s", 0, &["a"])]);
+
+        // Assert
         assert!(!changed);
+
+        // Act
         cast_all(&catalog, &mut memory, &[]);
+
+        // Assert
         assert!(memory.rooms.is_empty() && memory.characters.is_empty());
     }
 
     #[test]
     fn more_sessions_than_rooms_still_works() {
+        // Arrange
         let catalog = catalog(5, 1);
         let sessions = [session("a", 0, &[]), session("b", 1, &[])];
+
+        // Act
         let (casts, _) = cast_all(&catalog, &mut Assignments::default(), &sessions);
+
+        // Assert
         assert_eq!(casts.len(), 2);
     }
 }

@@ -28,6 +28,7 @@ mod tests {
     #[test]
     #[ignore = "exercise 6"]
     fn handles_only_terminal_app() {
+        // Act & Assert
         assert!(TerminalAppTabSelector.handles("/System/Applications/Utilities/Terminal.app"));
         assert!(!TerminalAppTabSelector.handles("/Applications/iTerm.app"));
     }
@@ -35,12 +36,16 @@ mod tests {
     #[test]
     #[ignore = "exercise 6"]
     fn runs_an_applescript_mentioning_the_tty() {
+        // Arrange
         let runner = ScriptedRunner::default().answer("osascript", "found\n");
-        assert!(
-            TerminalAppTabSelector
-                .select(&runner, "/dev/ttys007")
-                .unwrap()
-        );
+
+        // Act
+        let selected = TerminalAppTabSelector
+            .select(&runner, "/dev/ttys007")
+            .unwrap();
+
+        // Assert
+        assert!(selected);
         let calls = runner.calls.lock().unwrap();
         assert!(calls[0].contains("Terminal") && calls[0].contains("/dev/ttys007"));
     }
@@ -48,11 +53,15 @@ mod tests {
     #[test]
     #[ignore = "exercise 6"]
     fn reports_a_missing_tab() {
+        // Arrange
         let runner = ScriptedRunner::default().answer("osascript", "missing\n");
-        assert!(
-            !TerminalAppTabSelector
-                .select(&runner, "/dev/ttys007")
-                .unwrap()
-        );
+
+        // Act
+        let selected = TerminalAppTabSelector
+            .select(&runner, "/dev/ttys007")
+            .unwrap();
+
+        // Assert
+        assert!(!selected);
     }
 }

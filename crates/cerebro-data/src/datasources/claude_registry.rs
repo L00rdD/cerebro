@@ -62,6 +62,7 @@ mod tests {
 
     #[test]
     fn parses_real_registry_files_and_skips_garbage() {
+        // Arrange
         let dir = tempfile::tempdir().unwrap();
         fs::write(
             dir.path().join("52117.json"),
@@ -71,7 +72,10 @@ mod tests {
         fs::write(dir.path().join("1.json"), "{ not json").unwrap();
         fs::write(dir.path().join("2.key"), "ignored").unwrap();
 
+        // Act
         let sessions = ClaudeRegistrySource::new(dir.path()).observe().unwrap();
+
+        // Assert
         assert_eq!(sessions.len(), 1);
         let session = &sessions[0];
         assert_eq!(session.session.pid, Some(52117));
@@ -86,6 +90,7 @@ mod tests {
     #[test]
     #[ignore = "exercise 4"]
     fn scan_reports_malformed_files() {
+        // Arrange
         let dir = tempfile::tempdir().unwrap();
         fs::write(
             dir.path().join("52117.json"),
@@ -99,7 +104,10 @@ mod tests {
         )
         .unwrap();
 
+        // Act
         let scan = ClaudeRegistrySource::new(dir.path()).scan().unwrap();
+
+        // Assert
         assert_eq!(scan.sessions.len(), 1);
         assert_eq!(scan.problems.len(), 1);
         assert!(scan.problems[0].0.ends_with("1.json"));
@@ -108,10 +116,13 @@ mod tests {
 
     #[test]
     fn missing_directory_is_reported() {
+        // Arrange
         let source = ClaudeRegistrySource::new("/definitely/not/here");
-        assert!(matches!(
-            source.observe(),
-            Err(DomainError::SourceUnavailable(_))
-        ));
+
+        // Act
+        let result = source.observe();
+
+        // Assert
+        assert!(matches!(result, Err(DomainError::SourceUnavailable(_))));
     }
 }

@@ -265,11 +265,14 @@ mod tests {
 
     #[test]
     fn keeps_live_sessions_and_attaches_agents() {
+        // Arrange
         let agent = Agent {
             id: AgentId::new("a1"),
             kind: "Explore".into(),
             started_at: Timestamp(1),
         };
+
+        // Act
         let observation = source(
             Ok(vec![observed("s1", Some(10), None, SessionStatus::Busy, 1)]),
             vec![],
@@ -279,6 +282,8 @@ mod tests {
         )
         .observe()
         .unwrap();
+
+        // Assert
         assert_eq!(observation.warning, None);
         assert_eq!(observation.sessions[0].agents.len(), 1);
         assert_eq!(observation.sessions[0].tool, ToolId::new(CLAUDE_CODE));
@@ -286,6 +291,7 @@ mod tests {
 
     #[test]
     fn drops_dead_and_recycled_pids() {
+        // Act
         let observation = source(
             Ok(vec![
                 observed("dead", Some(1), None, SessionStatus::Idle, 1),
@@ -314,11 +320,14 @@ mod tests {
         )
         .observe()
         .unwrap();
+
+        // Assert
         assert_eq!(ids(&observation), ["same"]);
     }
 
     #[test]
     fn waiting_from_hooks_overrides_an_older_registry_status() {
+        // Act
         let observation = source(
             Ok(vec![observed("s1", Some(10), None, SessionStatus::Busy, 5)]),
             vec![observed("s1", None, None, SessionStatus::Waiting, 7)],
@@ -328,11 +337,14 @@ mod tests {
         )
         .observe()
         .unwrap();
+
+        // Assert
         assert_eq!(observation.sessions[0].status, SessionStatus::Waiting);
     }
 
     #[test]
     fn falls_back_to_hooks_when_registry_fails() {
+        // Act
         let observation = source(
             Err(DomainError::SourceUnavailable("gone".into())),
             vec![observed("h1", None, None, SessionStatus::Busy, 1)],
@@ -342,6 +354,8 @@ mod tests {
         )
         .observe()
         .unwrap();
+
+        // Assert
         assert!(
             observation.warning.as_deref().is_some_and(
                 |warning| warning.starts_with("Fallback mode: data source unavailable")
@@ -352,7 +366,10 @@ mod tests {
 
     #[test]
     fn falls_back_when_registry_is_empty_but_hooks_are_active() {
+        // Arrange
         let now = 10 * 60 * 1000;
+
+        // Act
         let recent = source(
             Ok(vec![]),
             vec![observed("h1", None, None, SessionStatus::Busy, now - 1000)],
@@ -362,10 +379,13 @@ mod tests {
         )
         .observe()
         .unwrap();
+
+        // Assert
         assert!(recent.warning.is_some());
         assert_eq!(ids(&recent), ["h1"]);
 
         // Stale hook records (e.g. a crashed session) must not trigger the fallback.
+        // Act
         let stale = source(
             Ok(vec![]),
             vec![observed("h1", None, None, SessionStatus::Busy, 0)],
@@ -375,6 +395,8 @@ mod tests {
         )
         .observe()
         .unwrap();
+
+        // Assert
         assert_eq!(stale, Observation::default());
     }
 }

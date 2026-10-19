@@ -162,6 +162,7 @@ mod tests {
 
     #[test]
     fn sanitize_id_strips_path_tricks() {
+        // Act & Assert
         assert_eq!(
             sanitize_id("../../etc/passwd").as_deref(),
             Some("etcpasswd")
@@ -172,6 +173,7 @@ mod tests {
 
     #[test]
     fn atomic_write_round_trips() {
+        // Arrange
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("nested/agent.json");
         let agent = HookAgent {
@@ -180,16 +182,21 @@ mod tests {
             agent_type: "Explore".into(),
             started_at_ms: 42,
         };
+
+        // Act
         write_json_atomic(&path, &agent).unwrap();
+
+        // Assert
         assert_eq!(read_json::<HookAgent>(&path).unwrap(), agent);
         assert!(!path.with_extension("json.tmp").exists());
     }
 
     #[test]
     fn status_uses_snake_case_on_disk() {
-        assert_eq!(
-            serde_json::to_string(&HookStatus::Waiting).unwrap(),
-            "\"waiting\""
-        );
+        // Act
+        let serialized = serde_json::to_string(&HookStatus::Waiting).unwrap();
+
+        // Assert
+        assert_eq!(serialized, "\"waiting\"");
     }
 }

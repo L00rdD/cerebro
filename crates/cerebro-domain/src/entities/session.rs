@@ -113,6 +113,7 @@ mod tests {
 
     #[test]
     fn status_display() {
+        // Act & Assert
         assert_eq!(SessionStatus::Busy.to_string(), "busy");
         assert_eq!(
             SessionStatus::Other("compacting".into()).to_string(),
@@ -122,13 +123,18 @@ mod tests {
 
     #[test]
     fn session_display_counts_agents() {
+        // Act
         let line = session(2).to_string();
+
+        // Assert
         assert!(line.contains("personal-f4"), "{line}");
         assert!(line.contains("busy"), "{line}");
         assert!(line.contains("2 agents"), "{line}");
-        assert!(
-            session(1).to_string().contains("1 agent "),
-            "singular, then a space"
-        );
+
+        // Act
+        let singular_line = session(1).to_string();
+
+        // Assert
+        assert!(singular_line.contains("1 agent "), "singular, then a space");
     }
 }

@@ -169,8 +169,13 @@ mod tests {
 
     #[test]
     fn selects_the_iterm_tab_by_tty() {
+        // Arrange
         let runner = Arc::new(tree().answer("osascript", "found\n"));
+
+        // Act
         let outcome = MacFocuser::new(runner.clone()).focus(&target()).unwrap();
+
+        // Assert
         assert_eq!(
             outcome,
             FocusOutcome::Tab {
@@ -183,8 +188,13 @@ mod tests {
 
     #[test]
     fn activates_the_app_when_no_tab_matches() {
+        // Arrange
         let runner = Arc::new(tree().answer("osascript", "missing\n"));
+
+        // Act
         let outcome = MacFocuser::new(runner.clone()).focus(&target()).unwrap();
+
+        // Assert
         assert_eq!(
             outcome,
             FocusOutcome::App {
@@ -203,12 +213,15 @@ mod tests {
 
     #[test]
     fn unknown_host_is_not_found() {
+        // Arrange
         let runner = Arc::new(
             ScriptedRunner::default().answer("ps -o ppid=,comm= -p 300", "    1 /usr/bin/tmux\n"),
         );
-        assert_eq!(
-            MacFocuser::new(runner).focus(&target()).unwrap(),
-            FocusOutcome::NotFound
-        );
+
+        // Act
+        let outcome = MacFocuser::new(runner).focus(&target()).unwrap();
+
+        // Assert
+        assert_eq!(outcome, FocusOutcome::NotFound);
     }
 }

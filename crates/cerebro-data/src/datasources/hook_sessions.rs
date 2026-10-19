@@ -78,11 +78,15 @@ mod tests {
 
     #[test]
     fn reads_fresh_records_only() {
+        // Arrange
         let dir = tempfile::tempdir().unwrap();
         write_json_atomic(&dir.path().join("fresh.json"), &record("fresh", now_ms())).unwrap();
         write_json_atomic(&dir.path().join("stale.json"), &record("stale", 1)).unwrap();
 
+        // Act
         let sessions = HookSessionSource::new(dir.path()).observe().unwrap();
+
+        // Assert
         assert_eq!(sessions.len(), 1);
         assert_eq!(sessions[0].session.name, "cerebro");
         assert_eq!(sessions[0].session.status, SessionStatus::Waiting);
@@ -91,9 +95,10 @@ mod tests {
 
     #[test]
     fn missing_directory_means_no_sessions() {
-        assert_eq!(
-            HookSessionSource::new("/nope").observe().unwrap(),
-            [] as [ObservedSession; 0]
-        );
+        // Act
+        let sessions = HookSessionSource::new("/nope").observe().unwrap();
+
+        // Assert
+        assert_eq!(sessions, [] as [ObservedSession; 0]);
     }
 }

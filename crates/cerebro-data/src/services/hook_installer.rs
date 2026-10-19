@@ -168,12 +168,23 @@ mod tests {
 
     #[test]
     fn installs_into_empty_settings_and_is_idempotent() {
+        // Arrange
         let dir = tempfile::tempdir().unwrap();
         let installer = installer(&dir);
+
+        // Act & Assert
         assert_eq!(installer.status().unwrap(), HookSetup::Missing);
+
+        // Act
         installer.install().unwrap();
+
+        // Assert
         assert_eq!(installer.status().unwrap(), HookSetup::Installed);
+
+        // Act
         installer.install().unwrap();
+
+        // Assert
         let settings: Value =
             serde_json::from_str(&fs::read_to_string(dir.path().join("settings.json")).unwrap())
                 .unwrap();
@@ -182,6 +193,7 @@ mod tests {
 
     #[test]
     fn migrates_legacy_script_and_keeps_foreign_hooks() {
+        // Arrange
         let dir = tempfile::tempdir().unwrap();
         let legacy = json!({
             "model": "opus",
@@ -192,9 +204,14 @@ mod tests {
         });
         fs::write(dir.path().join("settings.json"), legacy.to_string()).unwrap();
         let installer = installer(&dir);
+
+        // Act & Assert
         assert_eq!(installer.status().unwrap(), HookSetup::Outdated);
 
+        // Act
         installer.install().unwrap();
+
+        // Assert
         assert_eq!(installer.status().unwrap(), HookSetup::Installed);
 
         let text = fs::read_to_string(dir.path().join("settings.json")).unwrap();
@@ -217,22 +234,34 @@ mod tests {
 
     #[test]
     fn moved_binary_is_reported_outdated() {
+        // Arrange
         let dir = tempfile::tempdir().unwrap();
         installer(&dir).install().unwrap();
         let moved = ClaudeSettingsHookInstaller::new(
             dir.path().join("settings.json"),
             "/elsewhere/cerebro-hook",
         );
-        assert_eq!(moved.status().unwrap(), HookSetup::Outdated);
+
+        // Act
+        let status = moved.status().unwrap();
+
+        // Assert
+        assert_eq!(status, HookSetup::Outdated);
     }
 
     #[test]
     fn paths_with_spaces_are_quoted() {
+        // Arrange
         let dir = tempfile::tempdir().unwrap();
         let installer = ClaudeSettingsHookInstaller::new(
             dir.path().join("settings.json"),
             "/My Apps/cerebro-hook",
         );
-        assert_eq!(installer.command(), "\"/My Apps/cerebro-hook\"");
+
+        // Act
+        let command = installer.command();
+
+        // Assert
+        assert_eq!(command, "\"/My Apps/cerebro-hook\"");
     }
 }
