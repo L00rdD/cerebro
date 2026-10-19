@@ -56,7 +56,9 @@ Template mapping: `repositories/` (abstract) → `ports/`; `usecases/` → `usec
      (`strategies/casting.rs`), persisted in `~/.cerebro/assignments.json`.
 4. If the snapshot content changed, it is sent to the UI (`snapshot` event) and the tray is updated.
 5. **The UI** draws each scene on a canvas from PNG sprite sheets. Wandering is a pure function
-   of `(actor id, time)`; one shared 10 fps clock runs only while the panel is visible.
+   of `(actor id, time)`: each character has its own way to move (`walk`, `fly`, `teleport`,
+   `phase`, `dash`) and a power it uses while pausing between waypoints (`scene/powers.ts`).
+   One shared 10 fps clock runs only while the panel is visible.
 
 ## Assets
 
@@ -64,7 +66,7 @@ Art lives in files, not code:
 
 ```
 assets/characters/<id>.png     36×24 sheet: 3 frames (stand, step, step) × 2 rows (front, back), 12×12 each
-assets/characters/characters.json   id, name, sprite, optional aura color
+assets/characters/characters.json   id, name, sprite, optional aura color, move, power, powerColor
 assets/rooms/<id>.png          96×60 frames side by side (1 frame if static)
 assets/rooms/rooms.json        id, name, frames, fps, walkArea
 assets/ui/emotes.png           5×5 "z" and "!"

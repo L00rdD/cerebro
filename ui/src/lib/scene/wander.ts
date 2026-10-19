@@ -5,14 +5,30 @@ import type { Rect } from "../assets/catalog";
 
 export type Facing = "front" | "back";
 
+/** How a character gets from one waypoint to the next. */
+export type Movement = "walk" | "fly" | "teleport" | "phase" | "dash";
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
 export interface Pose {
   x: number;
   y: number;
   facing: Facing;
-  /** Mirror the sprite (walking left). */
+  /** Mirror the sprite (walking left, or facing left after walking left). */
   flip: boolean;
   /** 0 = standing, 1 and 2 = walking steps. */
   frame: 0 | 1 | 2;
+  /** Height above the ground in pixels: flyers hover while their shadow stays on the floor. */
+  lift: number;
+  /** Sprite opacity: phasing and teleporting characters fade out. */
+  alpha: number;
+  /** Set while moving between two waypoints; `progress` goes from 0 to 1. */
+  travel?: { from: Point; to: Point; progress: number };
+  /** Set while using a power during the pause at a waypoint; `leg` tells casts apart. */
+  cast?: { leg: number; progress: number };
 }
 
 /** 32-bit FNV-1a with a murmur3 finalizer. */
@@ -38,10 +54,27 @@ export function unit(seed: number, n: number): number {
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
 
-/** Share of each leg spent walking; the rest is a pause at the waypoint. */
-const WALK_SHARE = 0.6;
+/**
+ * Per movement: `pace` scales the leg duration, `share` is the part of each leg spent
+ * moving; the rest is a pause at the waypoint, where the character may use a power.
+ */
+const MOVEMENTS: Record<Movement, { pace: number; share: number }> = {
+  walk: { pace: 1, share: 0.6 },
+  phase: { pace: 1, share: 0.6 },
+  fly: { pace: 1.1, share: 0.55 },
+  teleport: { pace: 1, share: 0.3 },
+  dash: { pace: 0.8, share: 0.2 },
+};
 
-export function poseAt(actorId: string, area: Rect, seconds: number, walking: boolean): Pose {
+/** Share of pauses where the character uses its power. */
+const CAST_CHANCE = 0.75;
+
+/** Hovering height of flyers, with a slow bob. */
+function hover(seed: number, seconds: number): number {
+  return 4 + Math.round(Math.sin(seconds * 3 + (seed % 7)));
+}
+
+export function poseAt(actorId: string, area: Rect, seconds: number, walking: boolean, movement: Movement = "walk"): Pose {
   const seed = hash32(actorId);
   const point = (k: number) => ({
     x: area.x + unit(seed, k * 2) * area.width,
@@ -50,24 +83,52 @@ export function poseAt(actorId: string, area: Rect, seconds: number, walking: bo
 
   if (!walking) {
     const home = point(0);
-    return { x: Math.floor(home.x), y: Math.floor(home.y), facing: "front", flip: false, frame: 0 };
+    return { x: Math.floor(home.x), y: Math.floor(home.y), facing: "front", flip: false, frame: 0, lift: 0, alpha: 1 };
   }
 
-  const legSeconds = 3 + unit(seed, 999) * 2.5;
+  const { pace, share } = MOVEMENTS[movement];
+  const legSeconds = (3 + unit(seed, 999) * 2.5) * pace;
   const clock = seconds / legSeconds + unit(seed, 998) * 100;
   const k = Math.floor(clock);
   const progress = clock - k;
   const from = point(k);
   const to = point(k + 1);
-  const moving = progress < WALK_SHARE;
-  const u = moving ? progress / WALK_SHARE : 1;
   const dx = to.x - from.x;
   const dy = to.y - from.y;
+  const flying = movement === "fly";
+
+  if (progress >= share) {
+    return {
+      x: Math.floor(to.x),
+      y: Math.floor(to.y),
+      facing: "front",
+      flip: dx < 0,
+      frame: 0,
+      lift: flying ? hover(seed, seconds) : 0,
+      alpha: 1,
+      cast: unit(seed, 5000 + k) < CAST_CHANCE ? { leg: k, progress: (progress - share) / (1 - share) } : undefined,
+    };
+  }
+
+  const u = progress / share;
+  const travel = { from, to, progress: u };
+
+  if (movement === "teleport") {
+    // Fade out where it stands, vanish, then fade in at the destination.
+    const at = u < 0.5 ? from : to;
+    const alpha = u < 0.3 ? 1 - u / 0.3 : u > 0.7 ? (u - 0.7) / 0.3 : 0;
+    return { x: Math.floor(at.x), y: Math.floor(at.y), facing: "front", flip: dx < 0, frame: 0, lift: 0, alpha, travel };
+  }
+
+  const stepsPerSecond = movement === "dash" ? 12 : 6;
   return {
     x: Math.floor(from.x + dx * u),
     y: Math.floor(from.y + dy * u),
-    facing: moving && dy < 0 && Math.abs(dy) > Math.abs(dx) ? "back" : "front",
-    flip: moving && dx < 0,
-    frame: moving ? ((1 + (Math.floor(seconds * 6) % 2)) as 1 | 2) : 0,
+    facing: dy < 0 && Math.abs(dy) > Math.abs(dx) ? "back" : "front",
+    flip: dx < 0,
+    frame: flying ? 0 : ((1 + (Math.floor(seconds * stepsPerSecond) % 2)) as 1 | 2),
+    lift: flying ? hover(seed, seconds) + 2 : 0,
+    alpha: movement === "phase" ? 0.45 : 1,
+    travel,
   };
 }
