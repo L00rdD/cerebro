@@ -1,5 +1,8 @@
 // Loads the asset manifests (assets/*/…json) and their decoded images.
 
+import type { PowerKind } from "../scene/powers";
+import type { Movement } from "../scene/wander";
+
 export interface Rect { x: number; y: number; width: number; height: number }
 
 export interface CharacterAsset {
@@ -7,6 +10,11 @@ export interface CharacterAsset {
   name: string;
   /** Hex color of the energy aura drawn under the character, if any. */
   aura?: string;
+  /** How the character travels between waypoints. */
+  move: Movement;
+  /** The effect it plays while pausing, and its color. */
+  power: PowerKind;
+  powerColor: string;
   image: HTMLImageElement;
 }
 
@@ -27,7 +35,18 @@ export interface Catalog {
   emotes: HTMLImageElement;
 }
 
-interface CharactersFile { frameSize: number; characters: { id: string; name: string; aura?: string; sprite: string }[] }
+interface CharactersFile {
+  frameSize: number;
+  characters: {
+    id: string;
+    name: string;
+    aura?: string;
+    move?: Movement;
+    power?: PowerKind;
+    powerColor?: string;
+    sprite: string;
+  }[];
+}
 interface RoomsFile {
   frameWidth: number;
   frameHeight: number;
@@ -58,7 +77,15 @@ export function loadCatalog(): Promise<Catalog> {
       image("ui/emotes.png"),
     ]);
     const characterAssets = await Promise.all(
-      characters.characters.map(async (c) => ({ id: c.id, name: c.name, aura: c.aura, image: await image(c.sprite) })),
+      characters.characters.map(async (c) => ({
+        id: c.id,
+        name: c.name,
+        aura: c.aura,
+        move: c.move ?? "walk",
+        power: c.power ?? "glow",
+        powerColor: c.powerColor ?? c.aura ?? "#FFFFFF",
+        image: await image(c.sprite),
+      })),
     );
     const roomAssets = await Promise.all(
       rooms.rooms.map(async (r) => ({ ...r, image: await image(r.sprite) })),

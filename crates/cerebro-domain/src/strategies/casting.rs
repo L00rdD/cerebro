@@ -114,7 +114,7 @@ fn pick_character(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::entities::{Agent, AgentId, Origin, SessionId, SessionStatus};
+    use crate::entities::{Agent, AgentId, SessionId, SessionStatus, ToolId};
     use crate::time::Timestamp;
 
     fn catalog(characters: usize, rooms: usize) -> Catalog {
@@ -132,13 +132,13 @@ mod tests {
     fn session(id: &str, started: u64, agents: &[&str]) -> Session {
         Session {
             id: SessionId::new(id),
+            tool: ToolId::new("tool-a"),
             pid: Some(1),
             name: id.into(),
             cwd: "/".into(),
             status: SessionStatus::Busy,
             started_at: Timestamp(started),
             status_since: Timestamp(started),
-            origin: Origin::Registry,
             agents: agents
                 .iter()
                 .map(|agent_id| Agent {

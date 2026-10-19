@@ -2,9 +2,10 @@ use std::fs;
 use std::time::{Duration, SystemTime};
 
 use cerebro_domain::entities::{Agent, AgentId, SessionId};
-use cerebro_domain::ports::AgentSource;
 use cerebro_domain::time::Timestamp;
 use cerebro_protocol::{HookAgent, Paths, now_ms, read_json, sanitize_id};
+
+use super::AgentReader;
 
 /// Agent files older than this are leftovers of a missed `SubagentStop`.
 const AGENT_TTL_MS: u64 = 6 * 3600 * 1000;
@@ -22,7 +23,7 @@ impl HookAgentSource {
     }
 }
 
-impl AgentSource for HookAgentSource {
+impl AgentReader for HookAgentSource {
     fn agents_of(&self, session: &SessionId) -> Vec<Agent> {
         let Some(id) = sanitize_id(session.as_str()) else {
             return Vec::new();

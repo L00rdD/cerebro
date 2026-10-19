@@ -3,14 +3,16 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use cerebro_data::datasources::{ClaudeRegistrySource, HookAgentSource, HookSessionSource};
+use cerebro_data::datasources::{
+    ClaudeCodeDeps, ClaudeCodeSource, ClaudeRegistrySource, HookAgentSource, HookSessionSource,
+};
 use cerebro_data::repositories::{EmbeddedCatalog, JsonAssignmentStore};
 use cerebro_data::services::{
     ClaudeSettingsHookInstaller, PsProcessInspector, SystemClock, SystemCommandRunner,
 };
 use cerebro_data::strategies::focus::platform_focuser;
 use cerebro_domain::DomainError;
-use cerebro_domain::ports::CatalogSource;
+use cerebro_domain::ports::{CatalogSource, Clock};
 use cerebro_domain::usecases::{FocusSession, ManageHooks, ObserveSessions, ObserveSessionsDeps};
 use cerebro_protocol::Paths;
 
@@ -24,14 +26,21 @@ pub fn build() -> Result<Container, DomainError> {
     let paths = Paths::detect()
         .ok_or_else(|| DomainError::Platform("cannot find the home directory".into()))?;
     let runner = Arc::new(SystemCommandRunner);
+    let clock: Arc<dyn Clock> = Arc::new(SystemClock);
 
-    let observe = ObserveSessions::new(ObserveSessionsDeps {
+    // One source per AI tool: supporting another tool means adding its source here.
+    let claude_code = ClaudeCodeSource::new(ClaudeCodeDeps {
         registry: Arc::new(ClaudeRegistrySource::new(paths.claude_sessions_dir())),
         hooks: Arc::new(HookSessionSource::new(paths.hook_sessions_dir())),
         agents: Arc::new(HookAgentSource::new(paths.clone())),
         processes: Arc::new(PsProcessInspector::new(runner.clone())),
+        clock: clock.clone(),
+    });
+
+    let observe = ObserveSessions::new(ObserveSessionsDeps {
+        sources: vec![Arc::new(claude_code)],
         store: Arc::new(JsonAssignmentStore::new(paths.assignments_file())),
-        clock: Arc::new(SystemClock),
+        clock,
         catalog: EmbeddedCatalog.catalog()?,
     });
 

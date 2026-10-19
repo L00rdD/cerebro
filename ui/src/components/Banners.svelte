@@ -2,11 +2,9 @@
   import { app } from "../lib/state/app.svelte";
 </script>
 
-{#if app.snapshot?.mode.kind === "hooksFallback"}
-  <div class="banner warn">
-    Fallback mode: {app.snapshot.mode.reason}. Sessions come from Cerebro's hooks only (no names, no click-to-focus).
-  </div>
-{/if}
+{#each app.snapshot?.warnings ?? [] as warning (warning.tool)}
+  <div class="banner warn">{warning.message}</div>
+{/each}
 
 {#if app.hooks === "missing" || app.hooks === "outdated"}
   <div class="banner">

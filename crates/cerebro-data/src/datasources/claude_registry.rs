@@ -2,7 +2,8 @@ use std::fs;
 use std::path::PathBuf;
 
 use cerebro_domain::DomainError;
-use cerebro_domain::ports::{ObservedSession, SessionSource};
+
+use super::{ObservedSession, SessionReader};
 
 use crate::models::RegistryEntry;
 
@@ -36,7 +37,7 @@ pub enum RegistryProblem {
     Malformed(String),
 }
 
-impl SessionSource for ClaudeRegistrySource {
+impl SessionReader for ClaudeRegistrySource {
     fn observe(&self) -> Result<Vec<ObservedSession>, DomainError> {
         let entries = fs::read_dir(&self.dir).map_err(|error| {
             DomainError::SourceUnavailable(format!("{}: {error}", self.dir.display()))

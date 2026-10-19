@@ -1,11 +1,11 @@
 use std::path::PathBuf;
 
-use super::{AgentId, SessionId};
+use super::{AgentId, SessionId, ToolId};
 use crate::time::Timestamp;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SessionStatus {
-    /// Claude is working on a prompt.
+    /// The AI is working on a prompt.
     Busy,
     /// Waiting for the user's next prompt.
     Idle,
@@ -35,15 +35,6 @@ impl SessionStatus {
     }
 }
 
-/// Where a session's data came from.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Origin {
-    /// Claude Code's own session registry (rich: pid, name, status).
-    Registry,
-    /// Cerebro's hook records (fallback: no pid, no name).
-    Hooks,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Agent {
     pub id: AgentId,
@@ -55,14 +46,14 @@ pub struct Agent {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Session {
     pub id: SessionId,
-    /// Process id of the Claude Code instance, when known.
+    pub tool: ToolId,
+    /// Process id of the tool's instance, when known. Without it the session can't be focused.
     pub pid: Option<u32>,
     pub name: String,
     pub cwd: PathBuf,
     pub status: SessionStatus,
     pub started_at: Timestamp,
     pub status_since: Timestamp,
-    pub origin: Origin,
     pub agents: Vec<Agent>,
 }
 
@@ -103,13 +94,13 @@ mod tests {
     fn session(agents: usize) -> Session {
         Session {
             id: SessionId::new("s1"),
+            tool: ToolId::new("tool-a"),
             pid: Some(1),
             name: "personal-f4".into(),
             cwd: "/Users/me/personal".into(),
             status: SessionStatus::Busy,
             started_at: Timestamp(0),
             status_since: Timestamp(0),
-            origin: Origin::Registry,
             agents: (0..agents)
                 .map(|index| Agent {
                     id: AgentId::new(format!("a{index}")),

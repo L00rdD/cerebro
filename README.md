@@ -13,9 +13,11 @@ Cerebro has two goals:
 
 ## The app
 
-- Each session gets a room and an X-Man; each subagent it spawns adds another one. They wander
-  while working, fall asleep when the session is idle, and show **needs you** when Claude is
-  waiting for a permission.
+- Each session gets a room and an X-Man; each subagent it spawns adds another one. While working
+  they roam the room their own way (Storm flies, Nightcrawler teleports, Kitty phases, Northstar
+  dashes) and use their powers (optic blasts, lightning, claws, fireworks, force fields…).
+  They fall asleep when the session is idle, and show **needs you** when Claude is waiting for a
+  permission.
 - 22 rooms (Danger Room, Blackbird Hangar, Cerebro, Beast's Lab…) and 74 characters, drawn as
   pixel-art sprite sheets in `assets/`.
 - Stable picks: a session keeps its room and cast for its whole life, even across restarts.

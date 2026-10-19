@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::DomainError;
 use crate::ports::{HookInstaller, HookSetup};
 
-/// Reports and repairs Cerebro's hook entries in Claude Code's settings.
+/// Reports and repairs Cerebro's hook entries in the tool's settings.
 pub struct ManageHooks {
     installer: Arc<dyn HookInstaller>,
 }

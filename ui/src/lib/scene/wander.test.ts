@@ -26,6 +26,37 @@ describe("wander", () => {
     expect(a.frame).toBe(0);
   });
 
+  it("casts powers only while pausing", () => {
+    let casts = 0;
+    for (let t = 0; t < 200; t += 0.1) {
+      const pose = poseAt("agent:c", area, t, true);
+      if (pose.cast) {
+        casts++;
+        expect(pose.travel).toBeUndefined();
+        expect(pose.cast.progress).toBeGreaterThanOrEqual(0);
+        expect(pose.cast.progress).toBeLessThan(1);
+      }
+    }
+    expect(casts).toBeGreaterThan(0);
+    expect(poseAt("agent:c", area, 12, false).cast).toBeUndefined();
+  });
+
+  it("keeps flyers in the air and lands them when asleep", () => {
+    for (let t = 0; t < 50; t += 0.37) expect(poseAt("agent:d", area, t, true, "fly").lift).toBeGreaterThan(0);
+    expect(poseAt("agent:d", area, 3, false, "fly").lift).toBe(0);
+  });
+
+  it("teleports without crossing the room", () => {
+    for (let t = 0; t < 200; t += 0.13) {
+      const pose = poseAt("agent:e", area, t, true, "teleport");
+      if (!pose.travel) continue;
+      const { from, to } = pose.travel;
+      const onEnd = [from, to].some((p) => Math.floor(p.x) === pose.x && Math.floor(p.y) === pose.y);
+      expect(onEnd).toBe(true);
+      if (pose.travel.progress > 0.3 && pose.travel.progress < 0.7) expect(pose.alpha).toBe(0);
+    }
+  });
+
   it("spreads unit values over [0, 1)", () => {
     const values = Array.from({ length: 1000 }, (_, i) => unit(42, i));
     expect(Math.min(...values)).toBeGreaterThanOrEqual(0);

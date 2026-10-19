@@ -18,7 +18,7 @@ impl FocusSession {
         let pid = session.pid.ok_or_else(|| {
             DomainError::NotFocusable(
                 session.id.to_string(),
-                "no process id (hook-only session)".into(),
+                "its source reports no process id".into(),
             )
         })?;
         self.focuser.focus(&FocusTarget {
