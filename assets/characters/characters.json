@@ -3,400 +3,568 @@
     {
       "id": "professor-x",
       "name": "Professor X",
+      "power": "psychic",
+      "powerColor": "#C08CFF",
       "sprite": "characters/professor-x.png"
     },
     {
       "id": "cyclops",
       "name": "Cyclops",
+      "power": "beam",
+      "powerColor": "#FF2A2A",
       "sprite": "characters/cyclops.png"
     },
     {
       "id": "jean-grey",
+      "move": "fly",
       "name": "Jean Grey",
+      "power": "psychic",
+      "powerColor": "#FF7AD9",
       "sprite": "characters/jean-grey.png"
     },
     {
       "aura": "#FF8A00",
       "id": "phoenix",
+      "move": "fly",
       "name": "Phoenix",
+      "power": "fire",
+      "powerColor": "#FF8A00",
       "sprite": "characters/phoenix.png"
     },
     {
       "aura": "#BFE6FF",
       "id": "storm",
+      "move": "fly",
       "name": "Storm",
+      "power": "bolt",
+      "powerColor": "#F4F4FF",
       "sprite": "characters/storm.png"
     },
     {
       "id": "wolverine",
       "name": "Wolverine",
+      "power": "claws",
+      "powerColor": "#E8E8F0",
       "sprite": "characters/wolverine.png"
     },
     {
       "id": "rogue",
+      "move": "fly",
       "name": "Rogue",
+      "power": "absorb",
+      "powerColor": "#7CFFB2",
       "sprite": "characters/rogue.png"
     },
     {
       "id": "gambit",
       "name": "Gambit",
+      "power": "throw",
+      "powerColor": "#FF4FD8",
       "sprite": "characters/gambit.png"
     },
     {
       "id": "beast",
       "name": "Beast",
+      "power": "leap",
       "sprite": "characters/beast.png"
     },
     {
       "id": "nightcrawler",
+      "move": "teleport",
       "name": "Nightcrawler",
+      "power": "leap",
+      "powerColor": "#8A6AE0",
       "sprite": "characters/nightcrawler.png"
     },
     {
       "aura": "#BFE6FF",
       "id": "iceman",
       "name": "Iceman",
+      "power": "frost",
+      "powerColor": "#BFE6FF",
       "sprite": "characters/iceman.png"
     },
     {
       "id": "angel",
+      "move": "fly",
       "name": "Angel",
+      "power": "glow",
+      "powerColor": "#FFFFFF",
       "sprite": "characters/angel.png"
     },
     {
       "id": "archangel",
+      "move": "fly",
       "name": "Archangel",
+      "power": "throw",
+      "powerColor": "#B8C4D6",
       "sprite": "characters/archangel.png"
     },
     {
       "id": "colossus",
       "name": "Colossus",
+      "power": "shield",
+      "powerColor": "#C8D0DC",
       "sprite": "characters/colossus.png"
     },
     {
       "id": "shadowcat",
+      "move": "phase",
       "name": "Kitty Pryde",
+      "power": "glow",
+      "powerColor": "#D8C8FF",
       "sprite": "characters/shadowcat.png"
     },
     {
       "aura": "#FFD23F",
       "id": "jubilee",
       "name": "Jubilee",
+      "power": "sparks",
+      "powerColor": "#FFD23F",
       "sprite": "characters/jubilee.png"
     },
     {
       "aura": "#FF4FD8",
       "id": "psylocke",
       "name": "Psylocke",
+      "power": "claws",
+      "powerColor": "#FF4FD8",
       "sprite": "characters/psylocke.png"
     },
     {
       "id": "bishop",
       "name": "Bishop",
+      "power": "throw",
+      "powerColor": "#FFB000",
       "sprite": "characters/bishop.png"
     },
     {
       "id": "cable",
+      "move": "teleport",
       "name": "Cable",
+      "power": "throw",
+      "powerColor": "#6FB7FF",
       "sprite": "characters/cable.png"
     },
     {
       "id": "emma-frost",
       "name": "Emma Frost",
+      "power": "psychic",
+      "powerColor": "#F4F4FF",
       "sprite": "characters/emma-frost.png"
     },
     {
       "aura": "#FF6B3D",
       "id": "havok",
       "name": "Havok",
+      "power": "beam",
+      "powerColor": "#FF6B3D",
       "sprite": "characters/havok.png"
     },
     {
       "aura": "#7CFFB2",
       "id": "polaris",
+      "move": "fly",
       "name": "Polaris",
+      "power": "magnet",
+      "powerColor": "#7CFFB2",
       "sprite": "characters/polaris.png"
     },
     {
       "id": "banshee",
+      "move": "fly",
       "name": "Banshee",
+      "power": "sonic",
+      "powerColor": "#BFE6FF",
       "sprite": "characters/banshee.png"
     },
     {
       "aura": "#FF8A00",
       "id": "sunfire",
+      "move": "fly",
       "name": "Sunfire",
+      "power": "fire",
+      "powerColor": "#FF8A00",
       "sprite": "characters/sunfire.png"
     },
     {
       "id": "thunderbird",
       "name": "Thunderbird",
+      "power": "quake",
       "sprite": "characters/thunderbird.png"
     },
     {
       "id": "forge",
       "name": "Forge",
+      "power": "sparks",
+      "powerColor": "#6FB7FF",
       "sprite": "characters/forge.png"
     },
     {
       "aura": "#FF7AD9",
       "id": "dazzler",
       "name": "Dazzler",
+      "power": "sparks",
+      "powerColor": "#FF7AD9",
       "sprite": "characters/dazzler.png"
     },
     {
       "id": "longshot",
       "name": "Longshot",
+      "power": "throw",
+      "powerColor": "#E8E8F0",
       "sprite": "characters/longshot.png"
     },
     {
       "aura": "#FF8A00",
       "id": "cannonball",
+      "move": "dash",
       "name": "Cannonball",
+      "power": "fire",
+      "powerColor": "#FF8A00",
       "sprite": "characters/cannonball.png"
     },
     {
       "aura": "#2B2B33",
       "id": "sunspot",
+      "move": "fly",
       "name": "Sunspot",
+      "power": "fire",
+      "powerColor": "#FFB000",
       "sprite": "characters/sunspot.png"
     },
     {
       "aura": "#FF8A00",
       "id": "magik",
+      "move": "teleport",
       "name": "Magik",
+      "power": "claws",
+      "powerColor": "#C9F2FF",
       "sprite": "characters/magik.png"
     },
     {
       "id": "wolfsbane",
+      "move": "dash",
       "name": "Wolfsbane",
+      "power": "claws",
+      "powerColor": "#E8E8F0",
       "sprite": "characters/wolfsbane.png"
     },
     {
       "id": "mirage",
       "name": "Mirage",
+      "power": "psychic",
+      "powerColor": "#9FD8FF",
       "sprite": "characters/mirage.png"
     },
     {
       "id": "cypher",
       "name": "Cypher",
+      "power": "psychic",
+      "powerColor": "#9BE15D",
       "sprite": "characters/cypher.png"
     },
     {
       "aura": "#E0C020",
       "id": "warlock",
       "name": "Warlock",
+      "power": "glow",
+      "powerColor": "#E0C020",
       "sprite": "characters/warlock.png"
     },
     {
       "id": "karma",
       "name": "Karma",
+      "power": "psychic",
+      "powerColor": "#C08CFF",
       "sprite": "characters/karma.png"
     },
     {
       "aura": "#FFD23F",
       "id": "boom-boom",
       "name": "Boom-Boom",
+      "power": "throw",
+      "powerColor": "#FFD23F",
       "sprite": "characters/boom-boom.png"
     },
     {
       "id": "domino",
       "name": "Domino",
+      "power": "throw",
+      "powerColor": "#F4F4F4",
       "sprite": "characters/domino.png"
     },
     {
       "id": "x-23",
       "name": "X-23",
+      "power": "claws",
+      "powerColor": "#E8E8F0",
       "sprite": "characters/x-23.png"
     },
     {
       "aura": "#B46BFF",
       "id": "armor",
       "name": "Armor",
+      "power": "shield",
+      "powerColor": "#B46BFF",
       "sprite": "characters/armor.png"
     },
     {
       "aura": "#FFB6E1",
       "id": "pixie",
+      "move": "fly",
       "name": "Pixie",
+      "power": "sparks",
+      "powerColor": "#FFB6E1",
       "sprite": "characters/pixie.png"
     },
     {
       "aura": "#FF4FD8",
       "id": "blink",
+      "move": "teleport",
       "name": "Blink",
+      "power": "throw",
+      "powerColor": "#FF4FD8",
       "sprite": "characters/blink.png"
     },
     {
       "id": "multiple-man",
       "name": "Multiple Man",
+      "power": "clone",
       "sprite": "characters/multiple-man.png"
     },
     {
       "id": "strong-guy",
       "name": "Strong Guy",
+      "power": "quake",
       "sprite": "characters/strong-guy.png"
     },
     {
       "id": "siryn",
+      "move": "fly",
       "name": "Siryn",
+      "power": "sonic",
+      "powerColor": "#BFE6FF",
       "sprite": "characters/siryn.png"
     },
     {
       "aura": "#FF8A00",
       "id": "rachel-summers",
+      "move": "fly",
       "name": "Rachel Summers",
+      "power": "psychic",
+      "powerColor": "#FF8A00",
       "sprite": "characters/rachel-summers.png"
     },
     {
       "aura": "#F4F4F4",
       "id": "northstar",
+      "move": "dash",
       "name": "Northstar",
+      "power": "sparks",
+      "powerColor": "#F4F4F4",
       "sprite": "characters/northstar.png"
     },
     {
       "aura": "#F4F4F4",
       "id": "aurora",
+      "move": "dash",
       "name": "Aurora",
+      "power": "sparks",
+      "powerColor": "#F4F4F4",
       "sprite": "characters/aurora.png"
     },
     {
       "id": "marrow",
       "name": "Marrow",
+      "power": "claws",
+      "powerColor": "#F2E8D0",
       "sprite": "characters/marrow.png"
     },
     {
       "aura": "#FF8A00",
       "id": "chamber",
       "name": "Chamber",
+      "power": "beam",
+      "powerColor": "#FF8A00",
       "sprite": "characters/chamber.png"
     },
     {
       "id": "husk",
       "name": "Husk",
+      "power": "glow",
+      "powerColor": "#C8A070",
       "sprite": "characters/husk.png"
     },
     {
       "id": "monet",
+      "move": "fly",
       "name": "M",
+      "power": "psychic",
+      "powerColor": "#FFFFFF",
       "sprite": "characters/monet.png"
     },
     {
       "aura": "#9BE15D",
       "id": "synch",
       "name": "Synch",
+      "power": "absorb",
+      "powerColor": "#9BE15D",
       "sprite": "characters/synch.png"
     },
     {
       "aura": "#FF8A00",
       "id": "hope",
       "name": "Hope Summers",
+      "power": "fire",
+      "powerColor": "#FF8A00",
       "sprite": "characters/hope.png"
     },
     {
       "id": "doop",
+      "move": "fly",
       "name": "Doop",
+      "power": "glow",
+      "powerColor": "#9BE15D",
       "sprite": "characters/doop.png"
     },
     {
       "id": "rockslide",
       "name": "Rockslide",
+      "power": "quake",
       "sprite": "characters/rockslide.png"
     },
     {
       "id": "anole",
       "name": "Anole",
+      "power": "leap",
       "sprite": "characters/anole.png"
     },
     {
       "aura": "#FFE27A",
       "id": "elixir",
       "name": "Elixir",
+      "power": "sparks",
+      "powerColor": "#FFE27A",
       "sprite": "characters/elixir.png"
     },
     {
       "id": "mercury",
       "name": "Mercury",
+      "power": "claws",
+      "powerColor": "#C8D0DC",
       "sprite": "characters/mercury.png"
     },
     {
       "aura": "#6FB7FF",
       "id": "hellion",
+      "move": "fly",
       "name": "Hellion",
+      "power": "magnet",
+      "powerColor": "#6FB7FF",
       "sprite": "characters/hellion.png"
     },
     {
       "aura": "#B46BFF",
       "id": "magneto",
+      "move": "fly",
       "name": "Magneto",
+      "power": "magnet",
+      "powerColor": "#B46BFF",
       "sprite": "characters/magneto.png"
     },
     {
       "id": "sage",
       "name": "Sage",
+      "power": "psychic",
+      "powerColor": "#9BE15D",
       "sprite": "characters/sage.png"
     },
     {
       "id": "caliban",
       "name": "Caliban",
+      "power": "psychic",
+      "powerColor": "#C8C8C8",
       "sprite": "characters/caliban.png"
     },
     {
       "aura": "#9FD8FF",
       "id": "cecilia-reyes",
       "name": "Cecilia Reyes",
+      "power": "shield",
+      "powerColor": "#9FD8FF",
       "sprite": "characters/cecilia-reyes.png"
     },
     {
       "id": "juggernaut",
+      "move": "dash",
       "name": "Juggernaut",
+      "power": "quake",
       "sprite": "characters/juggernaut.png"
     },
     {
       "id": "rictor",
       "name": "Rictor",
+      "power": "quake",
       "sprite": "characters/rictor.png"
     },
     {
       "id": "shatterstar",
       "name": "Shatterstar",
+      "power": "claws",
+      "powerColor": "#E8E8F0",
       "sprite": "characters/shatterstar.png"
     },
     {
       "id": "feral",
+      "move": "dash",
       "name": "Feral",
+      "power": "claws",
+      "powerColor": "#E8E8F0",
       "sprite": "characters/feral.png"
     },
     {
       "id": "stepford",
       "name": "Stepford Cuckoos",
+      "power": "psychic",
+      "powerColor": "#BFE6FF",
       "sprite": "characters/stepford.png"
     },
     {
       "id": "gentle",
       "name": "Gentle",
+      "power": "quake",
       "sprite": "characters/gentle.png"
     },
     {
       "aura": "#FFB6C1",
       "id": "glob-herman",
       "name": "Glob Herman",
+      "power": "glow",
+      "powerColor": "#FFB6C1",
       "sprite": "characters/glob-herman.png"
     },
     {
       "id": "beak",
       "name": "Beak",
+      "power": "leap",
       "sprite": "characters/beak.png"
     },
     {
       "id": "nocturne",
+      "move": "teleport",
       "name": "Nocturne",
+      "power": "psychic",
+      "powerColor": "#8A6AE0",
       "sprite": "characters/nocturne.png"
     },
     {
       "aura": "#FF4FD8",
       "id": "kid-omega",
+      "move": "fly",
       "name": "Kid Omega",
+      "power": "psychic",
+      "powerColor": "#FF4FD8",
       "sprite": "characters/kid-omega.png"
     }
   ],
