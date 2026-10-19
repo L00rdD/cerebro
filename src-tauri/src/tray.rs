@@ -42,6 +42,11 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
+/// Where the icon sits on screen, in physical pixels (unknown on Linux).
+pub fn rect(app: &AppHandle) -> Option<tauri::Rect> {
+    app.tray_by_id(TRAY_ID)?.rect().ok().flatten()
+}
+
 /// Filled icon while something is working; character count next to it (macOS only).
 pub fn update(app: &AppHandle, counts: &CountsDto) {
     let Some(tray) = app.tray_by_id(TRAY_ID) else {

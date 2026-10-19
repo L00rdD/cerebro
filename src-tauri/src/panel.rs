@@ -4,7 +4,9 @@ use std::sync::PoisonError;
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
-use tauri::{AppHandle, Emitter, LogicalSize, Manager, WebviewWindow, WindowEvent};
+use tauri::{
+    AppHandle, Emitter, LogicalSize, Manager, PhysicalPosition, WebviewWindow, WindowEvent,
+};
 use tauri_plugin_positioner::{Position, WindowExt};
 
 use crate::state::AppState;
@@ -79,7 +81,7 @@ pub fn toggle(app: &AppHandle) {
 
 pub fn show(app: &AppHandle) {
     let Some(panel) = window(app) else { return };
-    let _ = panel.move_window(Position::TrayBottomCenter);
+    place(app, &panel);
     reveal(&panel);
     set_visible(app, true);
     // Fresh data right away instead of waiting for the next slow tick.
@@ -104,8 +106,27 @@ pub fn resize(app: &AppHandle, height: f64) {
     let Some(panel) = window(app) else { return };
     let _ = panel.set_size(LogicalSize::new(WIDTH, height.clamp(120.0, 900.0)));
     if panel.is_visible().unwrap_or(false) {
-        let _ = panel.move_window(Position::TrayBottomCenter);
+        place(app, &panel);
     }
+}
+
+/// Centers the panel just under the tray icon. The positioner puts it at the icon's top
+/// on macOS, counting on `AppKit` to push ordinary windows below the menu bar; the `NSPanel`
+/// sits at the menu bar level, so nothing does and it would cover the icon.
+fn place(app: &AppHandle, panel: &WebviewWindow) {
+    let (Some(tray), Ok(size), Ok(scale)) = (
+        crate::tray::rect(app),
+        panel.outer_size(),
+        panel.scale_factor(),
+    ) else {
+        let _ = panel.move_window(Position::TrayBottomCenter);
+        return;
+    };
+    let icon_at = tray.position.to_physical::<f64>(scale);
+    let icon_size = tray.size.to_physical::<f64>(scale);
+    let x = icon_at.x + icon_size.width / 2.0 - f64::from(size.width) / 2.0;
+    let y = icon_at.y + icon_size.height;
+    let _ = panel.set_position(PhysicalPosition::new(x, y));
 }
 
 /// Activating the app would pull the user out of a full-screen space: on macOS the panel
