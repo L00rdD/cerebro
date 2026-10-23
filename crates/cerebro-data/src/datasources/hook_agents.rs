@@ -79,6 +79,7 @@ mod tests {
 
     #[test]
     fn lists_agents_oldest_first() {
+        // Arrange
         let dir = tempfile::tempdir().unwrap();
         let paths = Paths::new(dir.path());
         for (id, kind, started_at) in [("b", "Plan", now_ms()), ("a", "Explore", now_ms() - 5000)] {
@@ -90,17 +91,26 @@ mod tests {
             };
             write_json_atomic(&paths.agent_file("s1", id), &agent).unwrap();
         }
+
+        // Act
         let agents = HookAgentSource::new(paths).agents_of(&SessionId::new("s1"));
+
+        // Assert
         let kinds: Vec<_> = agents.iter().map(|agent| agent.kind.as_str()).collect();
         assert_eq!(kinds, ["Explore", "Plan"]);
     }
 
     #[test]
     fn keeps_recent_orphans_during_grace_period() {
+        // Arrange
         let dir = tempfile::tempdir().unwrap();
         let paths = Paths::new(dir.path());
         fs::create_dir_all(paths.session_agents_dir("young")).unwrap();
+
+        // Act
         HookAgentSource::new(paths.clone()).forget_all_except(&[]);
+
+        // Assert
         assert!(paths.session_agents_dir("young").exists());
     }
 }

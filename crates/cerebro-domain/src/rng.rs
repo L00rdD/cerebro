@@ -39,6 +39,7 @@ mod tests {
     #[test]
     fn hash_is_stable() {
         // Pinned value: changing it would reshuffle everyone's rooms.
+        // Act & Assert
         assert_eq!(hash("session-1"), hash("session-1"));
         assert_ne!(hash("session-1"), hash("session-2"));
         assert_eq!(hash(""), mix(0xcbf2_9ce4_8422_2325));
@@ -46,9 +47,14 @@ mod tests {
 
     #[test]
     fn pick_free_skips_taken_and_falls_back() {
+        // Act
         let first = pick_free("x", 5, |_| false).unwrap();
         let second = pick_free("x", 5, |index| index == first).unwrap();
+
+        // Assert
         assert_ne!(first, second);
+
+        // Act & Assert
         assert_eq!(pick_free("x", 5, |_| true), Some(first));
         assert_eq!(pick_free("x", 0, |_| false), None);
     }

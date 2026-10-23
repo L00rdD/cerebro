@@ -138,9 +138,11 @@ mod tests {
 
     #[test]
     fn session_lifecycle() {
+        // Arrange
         let (_dir, paths) = setup();
         let event = |name: &str| json!({"hook_event_name": name, "session_id": "s1", "cwd": "/w"});
 
+        // Act & Assert
         assert_eq!(
             run(&paths, &event("SessionStart"), 1),
             Outcome::SessionUpdated(HookStatus::Idle)
@@ -154,57 +156,91 @@ mod tests {
             Outcome::SessionUnchanged
         );
 
+        // Assert
         let record: HookSession = read_json(&paths.hook_session_file("s1")).unwrap();
         assert_eq!((record.started_at_ms, record.status_since_ms), (1, 2));
 
-        assert_eq!(
-            run(&paths, &event("SessionEnd"), 4),
-            Outcome::SessionRemoved
-        );
+        // Act
+        let end_outcome = run(&paths, &event("SessionEnd"), 4);
+
+        // Assert
+        assert_eq!(end_outcome, Outcome::SessionRemoved);
         assert!(!paths.hook_session_file("s1").exists());
     }
 
     #[test]
     fn only_permission_notifications_mean_waiting() {
+        // Arrange
         let (_dir, paths) = setup();
         let idle = json!({"hook_event_name": "Notification", "session_id": "s1",
                           "notification_type": "idle_prompt", "message": "Claude is waiting for your input"});
-        assert_eq!(run(&paths, &idle, 1), Outcome::Ignored);
 
+        // Act
+        let idle_outcome = run(&paths, &idle, 1);
+
+        // Assert
+        assert_eq!(idle_outcome, Outcome::Ignored);
+
+        // Arrange
         let permission_event = json!({"hook_event_name": "Notification", "session_id": "s1",
                           "message": "Claude needs your permission to use Bash"});
+
+        // Act
+        let permission_outcome = run(&paths, &permission_event, 2);
+
+        // Assert
         assert_eq!(
-            run(&paths, &permission_event, 2),
+            permission_outcome,
             Outcome::SessionUpdated(HookStatus::Waiting)
         );
     }
 
     #[test]
     fn subagent_lifecycle() {
+        // Arrange
         let (_dir, paths) = setup();
         let start = json!({"hook_event_name": "SubagentStart", "session_id": "s1",
                            "agent_id": "a1", "agent_type": "Explore"});
-        assert_eq!(run(&paths, &start, 10), Outcome::AgentStarted);
+
+        // Act
+        let start_outcome = run(&paths, &start, 10);
+
+        // Assert
+        assert_eq!(start_outcome, Outcome::AgentStarted);
         let agent: HookAgent = read_json(&paths.agent_file("s1", "a1")).unwrap();
         assert_eq!(agent.agent_type, "Explore");
 
+        // Arrange
         let stop = json!({"hook_event_name": "SubagentStop", "session_id": "s1", "agent_id": "a1"});
-        assert_eq!(run(&paths, &stop, 11), Outcome::AgentStopped);
+
+        // Act
+        let stop_outcome = run(&paths, &stop, 11);
+
+        // Assert
+        assert_eq!(stop_outcome, Outcome::AgentStopped);
         assert!(!paths.agent_file("s1", "a1").exists());
     }
 
     #[test]
     fn hostile_ids_cannot_escape_the_state_dir() {
+        // Arrange
         let (dir, paths) = setup();
         let start = json!({"hook_event_name": "SubagentStart", "session_id": "../../x", "agent_id": "../y"});
+
+        // Act
         run(&paths, &start, 1);
+
+        // Assert
         assert!(paths.agent_file("x", "y").exists());
         assert!(!dir.path().parent().unwrap().join("x").exists());
     }
 
     #[test]
     fn unknown_events_and_garbage_are_harmless() {
+        // Arrange
         let (_dir, paths) = setup();
+
+        // Act & Assert
         assert_eq!(
             run(
                 &paths,

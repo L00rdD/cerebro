@@ -42,6 +42,7 @@ mod tests {
 
     #[test]
     fn actor_key_round_trips() {
+        // Act & Assert
         for key in [
             ActorKey::Lead(SessionId::new("s")),
             ActorKey::Agent(AgentId::new("a")),

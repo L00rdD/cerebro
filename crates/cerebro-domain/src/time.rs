@@ -36,30 +36,35 @@ mod tests {
 
     #[test]
     fn since_saturates() {
+        // Act & Assert
         assert_eq!(Timestamp(10).since(Timestamp(4)), 6);
         assert_eq!(Timestamp(4).since(Timestamp(10)), 0);
     }
 
     #[test]
     fn humanize_seconds() {
+        // Act & Assert
         assert_eq!(humanize_duration(0), "0s");
         assert_eq!(humanize_duration(42_999), "42s");
     }
 
     #[test]
     fn humanize_minutes() {
+        // Act & Assert
         assert_eq!(humanize_duration(60_000), "1min");
         assert_eq!(humanize_duration(59 * 60_000 + 59_000), "59min");
     }
 
     #[test]
     fn humanize_hours_pad_minutes() {
+        // Act & Assert
         assert_eq!(humanize_duration(3_600_000), "1h00");
         assert_eq!(humanize_duration(2 * 3_600_000 + 5 * 60_000), "2h05");
     }
 
     #[test]
     fn humanize_days() {
+        // Act & Assert
         assert_eq!(humanize_duration(3 * 24 * 3_600_000 + 1), "3d");
     }
 }
