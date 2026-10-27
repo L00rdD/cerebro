@@ -11,7 +11,10 @@
   <div class="phone" title={mobile.message ?? ""}>
     {#if host}
       <span>Phone: {host}</span>
-      <button onclick={() => app.copyPhoneLink()}>Copy link</button>
+      <div class="actions">
+        {#if app.canShare}<button onclick={() => app.sharePhoneLink()}>Share</button>{/if}
+        <button onclick={() => app.copyPhoneLink()}>Copy link</button>
+      </div>
     {:else if mobile.state === "online"}
       <span class="muted">Phone: {mobile.message ?? `join a private ${mobile.network} network to use it`}</span>
     {:else if mobile.state === "offline"}
@@ -28,5 +31,5 @@
   .phone { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 11px; }
   .phone span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .muted { color: var(--muted); }
-  button { flex-shrink: 0; }
+  .actions { display: flex; gap: 6px; flex-shrink: 0; }
 </style>

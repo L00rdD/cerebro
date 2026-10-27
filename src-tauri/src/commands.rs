@@ -9,7 +9,7 @@ use tauri_plugin_opener::OpenerExt as _;
 
 use crate::dto::{FocusDto, MobileDto, SnapshotDto, hook_setup_name};
 use crate::state::AppState;
-use crate::{panel, poller};
+use crate::{panel, poller, share};
 
 #[tauri::command]
 pub fn get_snapshot(app: AppHandle, state: State<'_, AppState>) -> Option<SnapshotDto> {
@@ -81,6 +81,18 @@ pub fn install_hooks(state: State<'_, AppState>) -> Result<&'static str, String>
 #[tauri::command]
 pub fn mobile_status(state: State<'_, AppState>) -> Option<MobileDto> {
     state.mobile()
+}
+
+/// Sends the phone link to the phone (`AirDrop`). The panel hides first: the share window takes
+/// the focus anyway.
+#[tauri::command]
+pub fn share_phone_link(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+    let url = state
+        .mobile()
+        .and_then(|mobile| mobile.urls.into_iter().next())
+        .ok_or("no phone link yet")?;
+    panel::hide(&app);
+    share::send(&url)
 }
 
 /// Starts the private network service (may show the administrator password prompt).

@@ -17,6 +17,7 @@ mod injector;
 mod mobile;
 mod panel;
 mod poller;
+mod share;
 mod state;
 mod tray;
 
@@ -44,6 +45,7 @@ pub fn run() {
             commands::hook_status,
             commands::install_hooks,
             commands::mobile_status,
+            commands::share_phone_link,
             commands::start_network,
             commands::autostart_enabled,
             commands::set_autostart,

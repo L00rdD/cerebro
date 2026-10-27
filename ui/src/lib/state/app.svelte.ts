@@ -112,6 +112,18 @@ class AppState {
     this.notify("Phone link copied. Open it in Safari on your phone, then Share → Add to Home Screen.");
   }
 
+  /** Desktop on macOS: the phone link can go straight to the phone through AirDrop. */
+  readonly canShare = desktop !== null && navigator.userAgent.includes("Mac");
+
+  async sharePhoneLink() {
+    if (!desktop) return;
+    try {
+      await desktop.sharePhoneLink();
+    } catch (e) {
+      this.notify(`Couldn't share the phone link: ${String(e)}`);
+    }
+  }
+
   notify(message: string) {
     this.toast = message;
     setTimeout(() => {

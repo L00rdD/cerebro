@@ -11,6 +11,7 @@ export const tauriBackend = {
   hookStatus: () => invoke<HookSetup>("hook_status"),
   installHooks: () => invoke<HookSetup>("install_hooks"),
   mobileStatus: () => invoke<MobileDto | null>("mobile_status"),
+  sharePhoneLink: () => invoke<void>("share_phone_link"),
   startNetwork: () => invoke<void>("start_network"),
   autostartEnabled: () => invoke<boolean>("autostart_enabled"),
   setAutostart: (enabled: boolean) => invoke<boolean>("set_autostart", { enabled }),
