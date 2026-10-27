@@ -36,5 +36,6 @@ button {
 button:hover { background: rgba(255, 255, 255, 0.14); }
 
 /* Phone page: an opaque, scrollable page instead of a transparent fixed panel. */
-:root.phone { background: #18181e; -webkit-text-size-adjust: 100%; }
-:root.phone body { overflow: auto; background: #18181e; font-size: 14px; }
+/* `overflow: visible` on both: `hidden` on html (the panel rule) would block the page's scroll. */
+:root.phone { overflow: visible; background: #18181e; -webkit-text-size-adjust: 100%; }
+:root.phone body { overflow: visible; background: #18181e; font-size: 14px; }
