@@ -112,17 +112,15 @@ class AppState {
     this.notify("Phone link copied. Open it in Safari on your phone, then Share → Add to Home Screen.");
   }
 
-  /** The system share sheet (AirDrop, Messages… on macOS; Nearby Share on Windows), when the webview has one. */
-  readonly canShare = typeof navigator.share === "function";
+  /** Desktop on macOS: the phone link can go straight to the phone through AirDrop. */
+  readonly canShare = desktop !== null && navigator.userAgent.includes("Mac");
 
   async sharePhoneLink() {
-    const url = this.mobile?.urls[0];
-    if (!url || !this.canShare) return;
+    if (!desktop) return;
     try {
-      await navigator.share({ title: "Cerebro", url });
+      await desktop.sharePhoneLink();
     } catch (e) {
-      // Closing the share sheet rejects with AbortError: nothing to report.
-      if ((e as Error).name !== "AbortError") this.notify(`Couldn't share the phone link: ${String(e)}`);
+      this.notify(`Couldn't share the phone link: ${String(e)}`);
     }
   }
 
