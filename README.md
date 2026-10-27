@@ -44,7 +44,8 @@ home screen. Phones reach the Mac through **ZeroTier** (a private network you al
    private networks (members approved by you), never on public ones, nor on your LAN.
 2. In the panel, the **Phone** line shows the address. **Copy link**: it ends with `?key=…`, the
    secret that lets the page read your sessions (stored in `~/.cerebro/mobile-key`; delete that
-   file to revoke every link).
+   file to revoke every link). **Share** sends it straight to the phone through the system share
+   sheet (AirDrop or Messages on macOS, Nearby Share on Windows; no button where the system has none).
 3. On the phone, open the link in Safari, then **Share → Add to Home Screen**.
 
 **ZeroTier off on the phone?** The page itself comes through ZeroTier, so it can't check or start
