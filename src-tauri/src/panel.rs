@@ -22,7 +22,7 @@ tauri_nspanel::tauri_panel! {
 }
 
 pub const LABEL: &str = "panel";
-pub const WIDTH: f64 = 446.0;
+pub const WIDTH: f64 = 644.0;
 /// A tray click first blurs (hides) the panel, then toggles it: ignore that toggle.
 const REOPEN_DEBOUNCE: Duration = Duration::from_millis(300);
 
@@ -124,8 +124,14 @@ fn place(app: &AppHandle, panel: &WebviewWindow) {
     };
     let icon_at = tray.position.to_physical::<f64>(scale);
     let icon_size = tray.size.to_physical::<f64>(scale);
-    let x = icon_at.x + icon_size.width / 2.0 - f64::from(size.width) / 2.0;
+    let mut x = icon_at.x + icon_size.width / 2.0 - f64::from(size.width) / 2.0;
     let y = icon_at.y + icon_size.height;
+    // An icon near the edge of the screen would push part of the panel off it.
+    if let Ok(Some(monitor)) = panel.current_monitor() {
+        let left = f64::from(monitor.position().x);
+        let right = left + f64::from(monitor.size().width) - f64::from(size.width);
+        x = x.clamp(left, right.max(left));
+    }
     let _ = panel.set_position(PhysicalPosition::new(x, y));
 }
 

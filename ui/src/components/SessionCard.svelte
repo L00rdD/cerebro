@@ -72,7 +72,7 @@
   onkeydown={(e) => e.key === "Enter" && focus()}
 >
   <div class="title"><i class="dot"></i><strong>{scene.name}</strong></div>
-  <SceneCanvas {catalog} {room} {actors} scale={app.phone ? 2 : 1} fill={app.phone} />
+  <SceneCanvas {catalog} {room} {actors} scale={app.phone ? 2 : 1.5} fill={app.phone} />
   <div class="cast"><span class="muted">{room.name} —</span> {names.join(" · ")}</div>
   <div class="meta"><span class="cwd">{shortenHome(scene.cwd)}</span><span>{statusLabel}</span></div>
 
@@ -97,7 +97,7 @@
 <style>
   .card {
     position: relative;
-    width: 204px;
+    width: 302px;
     padding: 6px;
     display: flex;
     flex-direction: column;
