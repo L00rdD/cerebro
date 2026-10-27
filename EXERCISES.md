@@ -101,8 +101,8 @@ git push -u origin HEAD
 gh pr create --fill
 ```
 
-The PR targets `develop`. GitHub Actions runs the tests on macOS, Linux and Windows; merge
-once everything is green.
+The PR targets `develop`. GitHub Actions runs the tests on macOS (Linux and Windows too for PRs
+to `main` or a manual run); merge once everything is green.
 
 > If `cargo` ever turns out not to be the real Cargo (e.g. a wrapper earlier in `PATH`),
 > prefix the commands with `sh scripts/with-rust.sh`: it puts the rustup toolchain first.
