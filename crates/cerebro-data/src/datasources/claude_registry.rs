@@ -19,7 +19,37 @@ impl ClaudeRegistrySource {
 
     /// EXERCISE 4: like `observe`, but keeps track of every file that could not be used.
     pub fn scan(&self) -> Result<RegistryScan, DomainError> {
-        todo!("Exercise 4: scan {}", self.dir.display())
+        let entries = fs::read_dir(&self.dir).map_err(|error| {
+            DomainError::SourceUnavailable(format!("{}: {error}", self.dir.display()))
+        })?;
+
+        Ok(entries
+            .filter_map(Result::ok)
+            .map(|entry| entry.path())
+            .filter(|path| path.extension().is_some_and(|ext| ext == "json"))
+            .map(|path| {
+                fs::read(&path)
+                    .map_err(|error| RegistryProblem::Unreadable(error.to_string()))
+                    .and_then(|bytes| {
+                        serde_json::from_slice::<RegistryEntry>(&bytes)
+                            .map_err(|error| RegistryProblem::Malformed(error.to_string()))
+                    })
+                    .map(ObservedSession::from)
+                    .map_err(|error| (path, error))
+            })
+            .fold(
+                RegistryScan {
+                    sessions: Vec::new(),
+                    problems: Vec::new(),
+                },
+                |mut scan, result| {
+                    match result {
+                        Ok(session) => scan.sessions.push(session),
+                        Err(problem) => scan.problems.push(problem),
+                    }
+                    scan
+                },
+            ))
     }
 }
 
@@ -31,27 +61,23 @@ pub struct RegistryScan {
 }
 
 /// Why a registry file was skipped (EXERCISE 4: derive `thiserror::Error` for nice messages).
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, thiserror::Error)]
 pub enum RegistryProblem {
+    #[error("unreadable file: {0}")]
     Unreadable(String),
+    #[error("malformed file: {0}")]
     Malformed(String),
 }
 
 impl SessionReader for ClaudeRegistrySource {
     fn observe(&self) -> Result<Vec<ObservedSession>, DomainError> {
-        let entries = fs::read_dir(&self.dir).map_err(|error| {
-            DomainError::SourceUnavailable(format!("{}: {error}", self.dir.display()))
-        })?;
-
-        // Unreadable or malformed files are skipped (EXERCISE 4 surfaces them instead).
-        Ok(entries
-            .filter_map(Result::ok)
-            .map(|entry| entry.path())
-            .filter(|path| path.extension().is_some_and(|ext| ext == "json"))
-            .filter_map(|path| fs::read(&path).ok())
-            .filter_map(|bytes| serde_json::from_slice::<RegistryEntry>(&bytes).ok())
-            .map(ObservedSession::from)
-            .collect())
+        self.scan()
+            .inspect(|scan| {
+                for (path, problem) in &scan.problems {
+                    eprintln!("{}: {}", path.display(), problem);
+                }
+            })
+            .map(|scan| scan.sessions)
     }
 }
 
@@ -84,7 +110,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "exercise 4"]
     fn scan_reports_malformed_files() {
         let dir = tempfile::tempdir().unwrap();
         fs::write(
