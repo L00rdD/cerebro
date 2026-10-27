@@ -74,6 +74,10 @@ fn restrict_to_owner(path: &Path) -> io::Result<()> {
 }
 
 #[cfg(not(unix))]
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "same signature as the unix version"
+)]
 fn restrict_to_owner(_path: &Path) -> io::Result<()> {
     Ok(())
 }
