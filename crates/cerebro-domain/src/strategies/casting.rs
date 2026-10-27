@@ -139,6 +139,7 @@ mod tests {
             status: SessionStatus::Busy,
             started_at: Timestamp(started),
             status_since: Timestamp(started),
+            remote_url: None,
             agents: agents
                 .iter()
                 .map(|agent_id| Agent {

@@ -1,117 +1,13 @@
-//! View models sent to the UI. The domain stays free of serde; mapping happens here.
+//! View models sent to the desktop panel. The domain stays free of serde; mapping happens here.
+//! Snapshots use the DTOs shared with the phone page (`cerebro_web::dto`).
 
-use cerebro_domain::entities::{Scene, Snapshot, SourceWarning};
-use cerebro_domain::ports::{FocusOutcome, HookSetup};
+use std::net::SocketAddr;
+
+use cerebro_domain::ports::{FocusOutcome, HookSetup, NetworkStatus};
+use cerebro_web::AccessKey;
 use serde::Serialize;
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SnapshotDto {
-    pub scenes: Vec<SceneDto>,
-    pub warnings: Vec<WarningDto>,
-    pub counts: CountsDto,
-    pub taken_at: u64,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct WarningDto {
-    pub tool: String,
-    pub message: String,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CountsDto {
-    pub sessions: usize,
-    pub busy: usize,
-    pub agents: usize,
-    pub characters: usize,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SceneDto {
-    pub id: String,
-    /// AI tool the session runs in, e.g. `claude-code`.
-    pub tool: String,
-    pub name: String,
-    pub cwd: String,
-    pub status: String,
-    pub status_since: u64,
-    pub started_at: u64,
-    /// False when the source reports no pid to follow.
-    pub focusable: bool,
-    pub room: String,
-    pub actors: Vec<ActorDto>,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ActorDto {
-    /// Stable id used to seed the actor's wandering path.
-    pub id: String,
-    pub character: String,
-    /// `None` for the session lead, the subagent type otherwise.
-    pub agent_kind: Option<String>,
-}
-
-impl From<&Snapshot> for SnapshotDto {
-    fn from(snapshot: &Snapshot) -> Self {
-        Self {
-            scenes: snapshot.scenes.iter().map(SceneDto::from).collect(),
-            warnings: snapshot.warnings.iter().map(WarningDto::from).collect(),
-            counts: CountsDto {
-                sessions: snapshot.scenes.len(),
-                busy: snapshot.busy_count(),
-                agents: snapshot.agent_count(),
-                characters: snapshot.character_count(),
-            },
-            taken_at: snapshot.taken_at.millis(),
-        }
-    }
-}
-
-impl From<&SourceWarning> for WarningDto {
-    fn from(warning: &SourceWarning) -> Self {
-        Self {
-            tool: warning.tool.to_string(),
-            message: warning.message.clone(),
-        }
-    }
-}
-
-impl From<&Scene> for SceneDto {
-    fn from(scene: &Scene) -> Self {
-        let session = &scene.session;
-        let lead = ActorDto {
-            id: format!("lead:{}", session.id),
-            character: scene.cast.lead.to_string(),
-            agent_kind: None,
-        };
-        let agents = session
-            .agents
-            .iter()
-            .zip(&scene.cast.agents)
-            .map(|(agent, character)| ActorDto {
-                id: format!("agent:{}", agent.id),
-                character: character.to_string(),
-                agent_kind: Some(agent.kind.clone()),
-            });
-        Self {
-            id: session.id.to_string(),
-            tool: session.tool.to_string(),
-            name: session.name.clone(),
-            cwd: session.cwd.display().to_string(),
-            status: session.status.as_str().to_owned(),
-            status_since: session.status_since.millis(),
-            started_at: session.started_at.millis(),
-            focusable: session.pid.is_some(),
-            room: scene.cast.room.to_string(),
-            actors: std::iter::once(lead).chain(agents).collect(),
-        }
-    }
-}
+pub use cerebro_web::dto::{CountsDto, SnapshotDto};
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase", tag = "kind")]
@@ -136,5 +32,46 @@ pub fn hook_setup_name(setup: HookSetup) -> &'static str {
         HookSetup::Installed => "installed",
         HookSetup::Missing => "missing",
         HookSetup::Outdated => "outdated",
+    }
+}
+
+/// How a phone reaches Cerebro: the private network's state and the links to open.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MobileDto {
+    /// e.g. `ZeroTier`.
+    pub network: String,
+    /// `notInstalled`, `stopped`, `offline`, `online` or `error`.
+    pub state: &'static str,
+    /// One link per private address, key included. Empty until the server listens.
+    pub urls: Vec<String>,
+    /// What went wrong (network query, port already taken…).
+    pub message: Option<String>,
+}
+
+impl MobileDto {
+    pub fn new(
+        network: String,
+        status: &Result<NetworkStatus, String>,
+        served_on: &[SocketAddr],
+        key: &AccessKey,
+        server_error: Option<String>,
+    ) -> Self {
+        let (state, message) = match status {
+            Ok(NetworkStatus::NotInstalled) => ("notInstalled", None),
+            Ok(NetworkStatus::Stopped) => ("stopped", None),
+            Ok(NetworkStatus::Offline) => ("offline", None),
+            Ok(NetworkStatus::Online(_)) => ("online", server_error),
+            Err(error) => ("error", Some(error.clone())),
+        };
+        Self {
+            network,
+            state,
+            urls: served_on
+                .iter()
+                .map(|address| format!("http://{address}/?key={}", key.as_str()))
+                .collect(),
+            message,
+        }
     }
 }

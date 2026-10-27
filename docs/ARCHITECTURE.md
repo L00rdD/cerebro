@@ -8,7 +8,9 @@ It is also agnostic of the AI tool: it sees sessions tagged with a `ToolId`, nev
                 ┌──────────────────────────── presentation ─────────────────────────────┐
                 │  ui/ (Svelte)                     src-tauri/ (cerebro-app)            │
                 │  components, scene renderer  ◄──  commands, events, tray, panel,      │
-                │  (display + animation only)  ──►  poller, injector (DI), DTOs         │
+                │  (display + animation only)  ──►  poller, mobile supervisor, DI       │
+                │        ▲ same build                                                   │
+                │  phone (Safari) ◄── HTTP + SSE ── crates/cerebro-web (server, DTOs)   │
                 └───────────────────────────────────────┬───────────────────────────────┘
                                                         │ calls use cases
                 ┌────────────────────────────── domain ─▼───────────────────────────────┐
@@ -32,8 +34,9 @@ It is also agnostic of the AI tool: it sees sessions tagged with a `ToolId`, nev
 | `cerebro-domain` | domain | thiserror | Entities, ports, casting strategy, use cases. No I/O, no serde, no knowledge of any AI tool. |
 | `cerebro-data` | data | domain, protocol | Implements every port with real files, processes and AppleScript. One `SessionSource` per AI tool (`ClaudeCodeSource`). |
 | `cerebro-hook` | tool | protocol | Tiny binary run by Claude Code on each hook event. Never prints, always exits 0. |
-| `cerebro-app` (`src-tauri/`) | presentation | domain, data, Tauri | Wiring, tray, panel window, commands, polling loop. |
+| `cerebro-app` (`src-tauri/`) | presentation | domain, data, web, Tauri | Wiring, tray, panel window, commands, polling loop, phone server supervisor. |
 | `cerebro-cli` | presentation | domain, data | Exercise playground (see `EXERCISES.md`). |
+| `cerebro-web` | presentation | domain, axum, tokio | The phone page: serves the UI build, the snapshot API and server-sent events. DTOs shared with the panel. No Tauri, so any host can run it. |
 
 Template mapping: `repositories/` (abstract) → `ports/`; `usecases/` → `usecases/`;
 `dependency_injection/injector.dart` → `src-tauri/src/injector.rs`; BLoC → Svelte state
@@ -55,10 +58,18 @@ Template mapping: `repositories/` (abstract) → `ports/`; `usecases/` → `usec
    - the domain then sorts every session by launch time and casts rooms and characters
      (`strategies/casting.rs`), persisted in `~/.cerebro/assignments.json`.
 4. If the snapshot content changed, it is sent to the UI (`snapshot` event) and the tray is updated.
-5. **The UI** draws each scene on a canvas from PNG sprite sheets. Wandering is a pure function
+5. **Phones** (`src-tauri/src/mobile.rs`): every 10 s the supervisor asks `ManageNetwork` for the
+   private network's state (`ZeroTierNetwork` runs `zerotier-cli -j`). It starts a `WebServer` on
+   this machine's addresses on **private** networks, moves it when they change and stops it when
+   the network goes away. The poller publishes each new snapshot to the server's `Publisher`;
+   every open page gets it as a server-sent event. The API wants the key from the phone link
+   (`~/.cerebro/mobile-key`); static files don't.
+6. **The UI** draws each scene on a canvas from PNG sprite sheets. Wandering is a pure function
    of `(actor id, time)`: each character has its own way to move (`walk`, `fly`, `teleport`,
    `phase`, `dash`) and a power it uses while pausing between waypoints (`scene/powers.ts`).
-   One shared 10 fps clock runs only while the panel is visible.
+   One shared 10 fps clock runs only while the panel (or the phone page) is visible. The same
+   build runs in both: `ui/src/lib/api/backend.ts` picks Tauri in the panel, HTTP on the phone,
+   where desktop-only features (focus, hooks, autostart) are hidden.
 
 ## Assets
 
@@ -83,6 +94,13 @@ files. The `shipped_manifests_are_valid` test guards them.
 whose tty matches the session; otherwise the app is just activated. Hook-only sessions (no pid)
 are not clickable.
 
+## Taking over from the phone
+
+Cerebro reports how to continue a session elsewhere but never drives it: `Session::remote_url` is
+filled by the session's source when its tool offers it. For Claude Code it comes from the
+registry's `bridgeSessionId`, written while Remote Control is on, and links to
+`https://claude.ai/code/session_…`. Another tool fills it its own way, or leaves it `None`.
+
 ## Decisions
 
 - **Tauri** over Electron/Flutter: small footprint for an always-on tray app, Rust backend.
@@ -94,3 +112,11 @@ are not clickable.
 - **Source-agnostic domain**: supporting another AI tool means writing its `SessionSource` in
   `cerebro-data` and adding it to `sources` in the injector; the domain doesn't change.
 - **Deterministic randomness** everywhere: nothing to store per frame, stable across restarts.
+- **The tool's own remote control** over typing into terminals: Claude Code's Remote Control is
+  built for it (history, permissions, any network); keystroke injection would be fragile and
+  terminal-specific.
+- **A web page over a native app**: no store, no signing, one UI build for both. Served over the
+  private network (ZeroTier) rather than the internet: nothing exposed publicly, and a key on top
+  because a private network can still have other members.
+- **Server-sent events** over WebSockets: the phone only listens; SSE reconnects by itself and
+  is plain HTTP.

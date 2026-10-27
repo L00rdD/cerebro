@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { backend } from "../lib/api/backend";
+  import { desktop } from "../lib/api/backend";
   import { app } from "../lib/state/app.svelte";
 </script>
 
@@ -8,7 +8,7 @@
     <input type="checkbox" checked={app.autostart} onchange={(e) => app.setAutostart(e.currentTarget.checked)} />
     Launch at login
   </label>
-  <button onclick={() => backend.quit()}>Quit</button>
+  <button onclick={() => desktop?.quit()}>Quit</button>
 </footer>
 
 <style>

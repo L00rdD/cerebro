@@ -128,6 +128,7 @@ mod tests {
             status: SessionStatus::Busy,
             started_at: Timestamp(started),
             status_since: Timestamp(started),
+            remote_url: None,
             agents: (0..agents)
                 .map(|index| Agent {
                     id: AgentId::new(format!("{id}-a{index}")),

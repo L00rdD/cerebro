@@ -3,7 +3,10 @@ use std::sync::{Mutex, PoisonError};
 use std::time::Instant;
 
 use cerebro_domain::entities::{Scene, Snapshot};
+use cerebro_web::Publisher;
+use tokio::sync::Notify;
 
+use crate::dto::MobileDto;
 use crate::injector::Container;
 
 pub struct AppState {
@@ -13,6 +16,11 @@ pub struct AppState {
     pub last_hidden: Mutex<Option<Instant>>,
     /// Drives the refresh rate and pauses UI animations while hidden.
     pub panel_visible: AtomicBool,
+    /// Feeds the phone page; outlives the servers, which follow the network.
+    pub publisher: Publisher,
+    mobile: Mutex<Option<MobileDto>>,
+    /// Wakes the mobile supervisor before its next check (e.g. right after starting `ZeroTier`).
+    pub mobile_recheck: Notify,
 }
 
 impl AppState {
@@ -22,6 +30,9 @@ impl AppState {
             last_snapshot: Mutex::new(None),
             last_hidden: Mutex::new(None),
             panel_visible: AtomicBool::new(false),
+            publisher: Publisher::new(),
+            mobile: Mutex::new(None),
+            mobile_recheck: Notify::new(),
         }
     }
 
@@ -40,6 +51,21 @@ impl AppState {
 
     pub fn snapshot(&self) -> Option<Snapshot> {
         self.last_snapshot
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+    }
+
+    /// Stores the phone access state; returns `true` when it changed.
+    pub fn replace_mobile(&self, mobile: MobileDto) -> bool {
+        let mut last = self.mobile.lock().unwrap_or_else(PoisonError::into_inner);
+        let changed = last.as_ref() != Some(&mobile);
+        *last = Some(mobile);
+        changed
+    }
+
+    pub fn mobile(&self) -> Option<MobileDto> {
+        self.mobile
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .clone()

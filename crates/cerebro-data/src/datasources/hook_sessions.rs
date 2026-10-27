@@ -56,6 +56,7 @@ fn to_session(record: HookSession) -> Session {
         },
         started_at: Timestamp(record.started_at_ms),
         status_since: Timestamp(record.status_since_ms),
+        remote_url: None,
         agents: Vec::new(),
     }
 }

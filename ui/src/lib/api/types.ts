@@ -1,4 +1,5 @@
-// Mirrors src-tauri/src/dto.rs. Keep both files in sync.
+// Mirrors crates/cerebro-web/src/dto.rs (snapshots) and src-tauri/src/dto.rs (desktop only).
+// Keep them in sync.
 
 export type SessionStatus = "busy" | "idle" | "waiting" | (string & {});
 
@@ -20,6 +21,8 @@ export interface SceneDto {
   statusSince: number;
   startedAt: number;
   focusable: boolean;
+  /** Where to continue the session from another device (e.g. Claude Code's Remote Control). */
+  remoteUrl: string | null;
   room: string;
   actors: ActorDto[];
 }
@@ -40,3 +43,13 @@ export interface SnapshotDto {
 export type FocusDto = { kind: "tab"; app: string } | { kind: "app"; app: string } | { kind: "notFound" };
 
 export type HookSetup = "installed" | "missing" | "outdated";
+
+/** How a phone reaches Cerebro through the private network (desktop panel only). */
+export interface MobileDto {
+  /** e.g. "ZeroTier". */
+  network: string;
+  state: "notInstalled" | "stopped" | "offline" | "online" | "error";
+  /** One link per private address, key included. Empty until the server listens. */
+  urls: string[];
+  message: string | null;
+}

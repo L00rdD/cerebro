@@ -7,6 +7,7 @@
 //! sessions/<session_id>.json            one HookSession per Claude Code session
 //! agents/<session_id>/<agent_id>.json   one HookAgent per running subagent
 //! assignments.json                      stable room / character picks (app only)
+//! mobile-key                            secret of the phone link (app only)
 //! ```
 
 use std::fs;
@@ -111,6 +112,11 @@ impl Paths {
 
     pub fn assignments_file(&self) -> PathBuf {
         self.cerebro_dir().join("assignments.json")
+    }
+
+    /// Secret of the phone link (app only). Delete it to revoke every link given so far.
+    pub fn mobile_key_file(&self) -> PathBuf {
+        self.cerebro_dir().join("mobile-key")
     }
 
     /// Claude Code's own registry of live sessions (internal, undocumented format).
