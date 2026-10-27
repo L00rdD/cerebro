@@ -15,6 +15,12 @@ export interface SceneActor {
 
 const EMOTE_SIZE = 9;
 
+/**
+ * Characters are drawn larger than the rooms' scale so they read at a glance. 1.5 keeps them
+ * crisp on Retina: each sprite pixel covers exactly 3 device pixels.
+ */
+export const CHARACTER_SCALE = 1.5;
+
 export function drawScene(
   ctx: CanvasRenderingContext2D,
   catalog: Catalog,
@@ -49,7 +55,10 @@ function drawActor(
   pose: Pose,
   seconds: number,
 ) {
-  const size = catalog.characterSize;
+  const size = {
+    width: catalog.characterSize.width * CHARACTER_SCALE,
+    height: catalog.characterSize.height * CHARACTER_SCALE,
+  };
   // Aimed powers (beams, claws, throws) are used side-on, towards the last direction walked.
   if (pose.cast && AIMED.has(asset.power)) pose = { ...pose, facing: "side" };
   const offset = castOffset(asset.power, pose, seconds);
@@ -62,13 +71,13 @@ function drawActor(
   // The shadow stays on the floor and shrinks as the character rises.
   ctx.globalAlpha = pose.alpha;
   ctx.fillStyle = "rgba(20, 12, 30, 0.28)";
-  const shadow = lift > 0 ? 8 : 12;
+  const shadow = lift > 0 ? 12 : 18;
   ctx.fillRect(x - shadow / 2, pose.y, shadow, 2);
   ctx.fillRect(x - shadow / 2 + 2, pose.y + 2, shadow - 4, 1);
 
   if (asset.aura) {
     ctx.globalAlpha = pose.alpha * (0.18 + 0.08 * Math.sin(seconds * 3 + pose.x));
-    pixelDisc(ctx, x, pose.y - lift - 10, 11, asset.aura);
+    pixelDisc(ctx, x, pose.y - lift - 15, 16, asset.aura);
   }
   ctx.globalAlpha = 1;
 
@@ -85,6 +94,7 @@ function drawActor(
     lift,
     seed: hash32(actor.id),
     seconds,
+    scale: CHARACTER_SCALE,
     color: asset.powerColor,
     width: catalog.roomSize.width,
     height: catalog.roomSize.height,
@@ -104,7 +114,7 @@ function drawActor(
 /** Sheet rows, top to bottom. */
 const ROWS: Record<Pose["facing"], number> = { front: 0, back: 1, side: 2 };
 
-/** Draws the character's current frame with its feet at (x, y). */
+/** Draws the character's current frame with its feet at (x, y); `size` is the drawn size. */
 function drawSprite(
   ctx: CanvasRenderingContext2D,
   asset: CharacterAsset,
@@ -116,19 +126,21 @@ function drawSprite(
 ) {
   if (alpha <= 0) return;
   const { width, height } = size;
-  const left = x - width / 2;
-  const top = y - height + 1;
-  const sx = pose.frame * width;
-  const sy = ROWS[pose.facing] * height;
+  const frameWidth = width / CHARACTER_SCALE;
+  const frameHeight = height / CHARACTER_SCALE;
+  const left = Math.round(x - width / 2);
+  const top = Math.round(y - height + 1);
+  const sx = pose.frame * frameWidth;
+  const sy = ROWS[pose.facing] * frameHeight;
   ctx.save();
   ctx.globalAlpha = alpha;
   // Only the side view is drawn facing right; front and back are lit from the left, so they stay as drawn.
   if (pose.flip && pose.facing === "side") {
     ctx.translate(left + width, top);
     ctx.scale(-1, 1);
-    ctx.drawImage(asset.image, sx, sy, width, height, 0, 0, width, height);
+    ctx.drawImage(asset.image, sx, sy, frameWidth, frameHeight, 0, 0, width, height);
   } else {
-    ctx.drawImage(asset.image, sx, sy, width, height, left, top, width, height);
+    ctx.drawImage(asset.image, sx, sy, frameWidth, frameHeight, left, top, width, height);
   }
   ctx.restore();
 }

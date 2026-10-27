@@ -49,7 +49,7 @@
 
 <style>
   main {
-    width: 644px;
+    width: 452px;
     padding: 14px;
     display: flex;
     flex-direction: column;
@@ -60,11 +60,11 @@
   }
   .grid {
     display: grid;
-    grid-template-columns: repeat(2, 302px);
+    grid-template-columns: repeat(2, 206px);
     gap: 10px;
   }
   .scroll {
-    max-height: 640px;
+    max-height: 560px;
     overflow-y: auto;
   }
   /* Phone: the whole screen, clear of the notch and the home indicator. */

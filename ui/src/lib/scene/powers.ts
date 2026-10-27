@@ -33,6 +33,8 @@ export interface PowerContext {
   lift: number;
   seed: number;
   seconds: number;
+  /** How much larger than the room's pixels the sprite is drawn. */
+  scale: number;
   color: string;
   /** Canvas size, so beams and projectiles stop at the walls. */
   width: number;
@@ -86,10 +88,10 @@ const DRAWERS: Record<PowerKind, (p: PowerContext, e: number) => void> = {
   glow,
 };
 
-/** Anchor points on a 24px sprite: `head` is at eye level. */
+/** Anchor points on a 24px sprite drawn at `scale`: `head` is at eye level. */
 function body(p: PowerContext) {
   const feet = p.pose.y - p.lift;
-  return { dir: p.pose.flip ? -1 : 1, feet, chest: feet - 9, head: feet - 16 };
+  return { dir: p.pose.flip ? -1 : 1, feet, chest: feet - Math.round(9 * p.scale), head: feet - Math.round(16 * p.scale) };
 }
 
 /** Distance from x to the wall in direction dir. */
@@ -110,7 +112,7 @@ function burst(ctx: CanvasRenderingContext2D, cx: number, cy: number, radius: nu
 function beam(p: PowerContext, e: number) {
   const { ctx } = p;
   const { dir, head } = body(p);
-  const x0 = p.x + dir * 5;
+  const x0 = p.x + dir * Math.round(5 * p.scale);
   const y = head;
   const length = Math.round(Math.min(1, e * 4) * toWall(p, x0, dir));
   const x1 = x0 + dir * length;
@@ -213,7 +215,7 @@ function claws(p: PowerContext, e: number) {
   const alpha = ctx.globalAlpha;
   ctx.globalAlpha = alpha * (1 - swipe);
   for (let i = 0; i < 3; i++) {
-    const x0 = p.x + dir * (6 + i * 3);
+    const x0 = p.x + dir * (Math.round(6 * p.scale) + i * 3);
     const y0 = chest - 7;
     pixelLine(ctx, x0, y0, x0 + dir * reach, y0 + reach, p.color);
     pixelLine(ctx, x0 + dir, y0, x0 + dir * (reach + 1), y0 + reach, "#FFFFFF");
@@ -225,7 +227,7 @@ function claws(p: PowerContext, e: number) {
 function projectile(p: PowerContext, e: number) {
   const { ctx } = p;
   const { dir, chest } = body(p);
-  const x0 = p.x + dir * 7;
+  const x0 = p.x + dir * Math.round(7 * p.scale);
   const range = Math.min(64, toWall(p, x0, dir));
   const flight = Math.min(1, e / 0.55);
   const x = Math.round(x0 + dir * range * flight);
@@ -263,7 +265,7 @@ function sparks(p: PowerContext, e: number) {
 function shield(p: PowerContext, e: number) {
   const { ctx } = p;
   const { chest } = body(p);
-  const radius = Math.round(Math.min(1, e * 5) * 15);
+  const radius = Math.round(Math.min(1, e * 5) * 12 * p.scale);
   const alpha = ctx.globalAlpha;
   ctx.globalAlpha = alpha * 0.25;
   pixelDisc(ctx, p.x, chest, radius, p.color);
@@ -302,7 +304,7 @@ function sonic(p: PowerContext, e: number) {
     ctx.fillStyle = p.color;
     for (let dy = -half; dy <= half; dy++) {
       const bend = Math.round((dy * dy) / (half * 1.5));
-      ctx.fillRect(Math.round(p.x + dir * (7 + d - bend)), head + 3 + dy, 1, 1);
+      ctx.fillRect(Math.round(p.x + dir * (7 * p.scale + d - bend)), head + 4 + dy, 1, 1);
     }
   }
   ctx.globalAlpha = alpha;
@@ -331,13 +333,13 @@ function quake(p: PowerContext, e: number) {
 
 /** Duplicates popping up around the caster. */
 function clone(p: PowerContext, e: number) {
-  const spots = [-20, 20, -11, 11];
+  const spots = [-20, 20, -11, 11].map((dx) => Math.round(dx * p.scale));
   const shown = Math.min(spots.length, Math.floor(e * 6) + 1);
   for (let i = 0; i < shown; i++) {
     const x = Math.round(Math.max(12, Math.min(p.width - 12, p.x + spots[i]!)));
     const y = p.pose.y + (i < 2 ? 0 : -7);
     p.ghost(x, y, 0.85);
-    if (e > 0.85) burst(p.ctx, x, y - 10, Math.round((e - 0.85) * 60), "#FFFFFF");
+    if (e > 0.85) burst(p.ctx, x, y - Math.round(10 * p.scale), Math.round((e - 0.85) * 60), "#FFFFFF");
   }
 }
 

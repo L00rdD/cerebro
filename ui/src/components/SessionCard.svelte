@@ -12,6 +12,31 @@
 
   let menuOpen = $state(false);
 
+  /** Hovering a scene shows it at twice the size, over the panel, after a short delay. */
+  const ZOOM = 2;
+  const ZOOM_DELAY_MS = 250;
+  let card: HTMLDivElement;
+  let zoomTop = $state<number | null>(null);
+  let zoomTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function startZoom() {
+    if (app.phone) return;
+    clearTimeout(zoomTimer);
+    zoomTimer = setTimeout(() => {
+      const rect = card.getBoundingClientRect();
+      const height = catalog.roomSize.height * ZOOM + 8;
+      // Centered on the card, but kept inside the window.
+      const top = rect.top + rect.height / 2 - height / 2;
+      zoomTop = Math.max(4, Math.min(window.innerHeight - height - 4, top));
+    }, ZOOM_DELAY_MS);
+  }
+
+  function stopZoom() {
+    clearTimeout(zoomTimer);
+    zoomTop = null;
+    menuOpen = false;
+  }
+
   /** Clicking jumps to the terminal: desktop only, and only with a process to follow. */
   let focusable = $derived(desktop !== null && scene.focusable);
   let room = $derived(catalog.rooms.get(scene.room) ?? [...catalog.rooms.values()][0]!);
@@ -66,15 +91,23 @@
   title={app.phone ? undefined : tooltip}
   onclick={focus}
   oncontextmenu={toggleMenu}
-  onmouseleave={() => (menuOpen = false)}
+  bind:this={card}
+  onmouseenter={startZoom}
+  onmouseleave={stopZoom}
   role="button"
   tabindex="0"
   onkeydown={(e) => e.key === "Enter" && focus()}
 >
   <div class="title"><i class="dot"></i><strong>{scene.name}</strong></div>
-  <SceneCanvas {catalog} {room} {actors} scale={app.phone ? 2 : 1.5} fill={app.phone} />
+  <SceneCanvas {catalog} {room} {actors} scale={app.phone ? 2 : 1} fill={app.phone} />
   <div class="cast"><span class="muted">{room.name} —</span> {names.join(" · ")}</div>
   <div class="meta"><span class="cwd">{shortenHome(scene.cwd)}</span><span>{statusLabel}</span></div>
+
+  {#if zoomTop !== null && !menuOpen}
+    <div class="zoom" style:top="{zoomTop}px">
+      <SceneCanvas {catalog} {room} {actors} scale={ZOOM} />
+    </div>
+  {/if}
 
   {#if app.phone}
     {#if scene.remoteUrl}
@@ -97,7 +130,7 @@
 <style>
   .card {
     position: relative;
-    width: 302px;
+    width: 206px;
     padding: 6px;
     display: flex;
     flex-direction: column;
@@ -134,6 +167,18 @@
     z-index: 2;
   }
   .menu button { text-align: left; border: none; font-size: 11px; }
+  .zoom {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 3px;
+    background: var(--card);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 8px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+    pointer-events: none;
+    z-index: 3;
+  }
 
   /* Phone: one card per row, readable without zooming, a thumb-sized take-over button. */
   .card.phone { width: auto; padding: 10px; gap: 8px; border-radius: 12px; }

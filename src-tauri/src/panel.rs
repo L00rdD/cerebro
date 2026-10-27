@@ -22,7 +22,7 @@ tauri_nspanel::tauri_panel! {
 }
 
 pub const LABEL: &str = "panel";
-pub const WIDTH: f64 = 644.0;
+pub const WIDTH: f64 = 452.0;
 /// A tray click first blurs (hides) the panel, then toggles it: ignore that toggle.
 const REOPEN_DEBOUNCE: Duration = Duration::from_millis(300);
 
