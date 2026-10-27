@@ -2,7 +2,7 @@
   import { app } from "../lib/state/app.svelte";
 
   let mobile = $derived(app.mobile);
-  /** `172.28.115.163:4243`: the link without its scheme and key. */
+  /** `10.147.17.42:4243`: the link without its scheme and key. */
   let host = $derived(mobile?.urls[0] ? new URL(mobile.urls[0]).host : null);
 </script>
 
