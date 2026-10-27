@@ -694,9 +694,10 @@ the full path, and clicking a tmux session in the app shows the right pane.
 
 **What to build.**
 
-1. Draw the room in Aseprite or Piskel. One frame is **96×60 px**. For an animation, put the
-   frames side by side in a single horizontal strip: 32 frames make a 3072×60 PNG, like
-   `lake.png`.
+1. Draw the room in Aseprite or Piskel. One frame is **192×120 px**; characters are 24×24 with
+   their feet at the bottom. For an animation, put the frames side by side in a single horizontal
+   strip: 16 frames make a 3072×120 PNG, like `lake.png`. You can also add a function to
+   `scripts/art/rooms.py`, which draws every shipped room.
 2. Save it as `assets/rooms/<id>.png` and add an entry to `rooms.json`:
 
    | Field | Meaning |

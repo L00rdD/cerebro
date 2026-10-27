@@ -2,7 +2,7 @@
 
 import type { Catalog, CharacterAsset, RoomAsset } from "../assets/catalog";
 import { pixelDisc } from "./pixels";
-import { castOffset, drawPower } from "./powers";
+import { AIMED, castOffset, drawPower } from "./powers";
 import { hash32, poseAt, type Pose } from "./wander";
 
 export type ActorState = "walking" | "asleep" | "alert";
@@ -13,7 +13,13 @@ export interface SceneActor {
   state: ActorState;
 }
 
-const EMOTE_SIZE = 5;
+const EMOTE_SIZE = 9;
+
+/**
+ * Characters are drawn larger than the rooms' scale so they read at a glance. 1.5 keeps them
+ * crisp on Retina: each sprite pixel covers exactly 3 device pixels.
+ */
+export const CHARACTER_SCALE = 1.5;
 
 export function drawScene(
   ctx: CanvasRenderingContext2D,
@@ -49,24 +55,29 @@ function drawActor(
   pose: Pose,
   seconds: number,
 ) {
-  const size = catalog.characterSize;
+  const size = {
+    width: catalog.characterSize.width * CHARACTER_SCALE,
+    height: catalog.characterSize.height * CHARACTER_SCALE,
+  };
+  // Aimed powers (beams, claws, throws) are used side-on, towards the last direction walked.
+  if (pose.cast && AIMED.has(asset.power)) pose = { ...pose, facing: "side" };
   const offset = castOffset(asset.power, pose, seconds);
   const x = pose.x + offset.dx;
   const lift = pose.lift + offset.lift;
-  const left = x - size / 2;
-  const top = pose.y - lift - size + 1;
+  const top = pose.y - lift - size.height + 1;
   const sprite = (feetX: number, feetY: number, alpha: number) =>
     drawSprite(ctx, asset, size, pose, feetX, feetY, alpha);
 
   // The shadow stays on the floor and shrinks as the character rises.
   ctx.globalAlpha = pose.alpha;
-  ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
-  const shadow = lift > 0 ? 6 : 8;
-  ctx.fillRect(x - shadow / 2, pose.y, shadow, 1);
+  ctx.fillStyle = "rgba(20, 12, 30, 0.28)";
+  const shadow = lift > 0 ? 12 : 18;
+  ctx.fillRect(x - shadow / 2, pose.y, shadow, 2);
+  ctx.fillRect(x - shadow / 2 + 2, pose.y + 2, shadow - 4, 1);
 
   if (asset.aura) {
     ctx.globalAlpha = pose.alpha * (0.18 + 0.08 * Math.sin(seconds * 3 + pose.x));
-    pixelDisc(ctx, x, pose.y - lift - 5, 6, asset.aura);
+    pixelDisc(ctx, x, pose.y - lift - 15, 16, asset.aura);
   }
   ctx.globalAlpha = 1;
 
@@ -83,6 +94,7 @@ function drawActor(
     lift,
     seed: hash32(actor.id),
     seconds,
+    scale: CHARACTER_SCALE,
     color: asset.powerColor,
     width: catalog.roomSize.width,
     height: catalog.roomSize.height,
@@ -92,35 +104,43 @@ function drawActor(
   if (actor.state === "asleep") {
     const rise = Math.floor(seconds * 2) % 4;
     ctx.globalAlpha = 1 - rise * 0.2;
-    drawEmote(ctx, catalog, 0, left + 10, top - 3 - rise);
+    drawEmote(ctx, catalog, 0, x + 3, top - 2 - rise);
     ctx.globalAlpha = 1;
   } else if (actor.state === "alert" && Math.floor(seconds * 3) % 2 === 0) {
-    drawEmote(ctx, catalog, 1, left + 3, top - 7);
+    drawEmote(ctx, catalog, 1, x - Math.floor(EMOTE_SIZE / 2), top - EMOTE_SIZE);
   }
 }
 
-/** Draws the character's current frame with its feet at (x, y). */
+/** Sheet rows, top to bottom. */
+const ROWS: Record<Pose["facing"], number> = { front: 0, back: 1, side: 2 };
+
+/** Draws the character's current frame with its feet at (x, y); `size` is the drawn size. */
 function drawSprite(
   ctx: CanvasRenderingContext2D,
   asset: CharacterAsset,
-  size: number,
+  size: { width: number; height: number },
   pose: Pose,
   x: number,
   y: number,
   alpha: number,
 ) {
   if (alpha <= 0) return;
-  const left = x - size / 2;
-  const top = y - size + 1;
-  const row = pose.facing === "front" ? 0 : 1;
+  const { width, height } = size;
+  const frameWidth = width / CHARACTER_SCALE;
+  const frameHeight = height / CHARACTER_SCALE;
+  const left = Math.round(x - width / 2);
+  const top = Math.round(y - height + 1);
+  const sx = pose.frame * frameWidth;
+  const sy = ROWS[pose.facing] * frameHeight;
   ctx.save();
   ctx.globalAlpha = alpha;
-  if (pose.flip) {
-    ctx.translate(left + size, top);
+  // Only the side view is drawn facing right; front and back are lit from the left, so they stay as drawn.
+  if (pose.flip && pose.facing === "side") {
+    ctx.translate(left + width, top);
     ctx.scale(-1, 1);
-    ctx.drawImage(asset.image, pose.frame * size, row * size, size, size, 0, 0, size, size);
+    ctx.drawImage(asset.image, sx, sy, frameWidth, frameHeight, 0, 0, width, height);
   } else {
-    ctx.drawImage(asset.image, pose.frame * size, row * size, size, size, left, top, size, size);
+    ctx.drawImage(asset.image, sx, sy, frameWidth, frameHeight, left, top, width, height);
   }
   ctx.restore();
 }
@@ -143,12 +163,12 @@ function drawTeleportSmoke(ctx: CanvasRenderingContext2D, pose: Pose, color: str
   // Leaving: the puff grows as the character fades; landing: it clears as the character appears.
   const spread = progress < 0.5 ? t : 1 - t;
   const cx = Math.floor(at.x);
-  const cy = Math.floor(at.y) - 5;
+  const cy = Math.floor(at.y) - 10;
   ctx.save();
   ctx.globalAlpha = 0.9 * (progress < 0.5 ? 1 - t * 0.6 : 0.4 + (1 - t) * 0.6);
-  for (let i = 0; i < 10; i++) {
-    const angle = (i / 10) * Math.PI * 2 + spread;
-    const r = 2 + spread * 6;
+  for (let i = 0; i < 14; i++) {
+    const angle = (i / 14) * Math.PI * 2 + spread;
+    const r = 3 + spread * 11;
     ctx.fillStyle = i % 3 === 0 ? "#FFFFFF" : color;
     ctx.fillRect(Math.round(cx + Math.cos(angle) * r), Math.round(cy + Math.sin(angle) * r * 0.8), 2, 2);
   }

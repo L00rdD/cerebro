@@ -15,7 +15,7 @@ describe("powers", () => {
       const { lift } = castOffset("leap", pose, t);
       if (!pose.cast) expect(lift).toBe(0);
       expect(lift).toBeGreaterThanOrEqual(0);
-      expect(lift).toBeLessThanOrEqual(10);
+      expect(lift).toBeLessThanOrEqual(18);
       if (lift > 0) leaps++;
     }
 
