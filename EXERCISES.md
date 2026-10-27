@@ -4,14 +4,21 @@ Thirteen exercises that make Cerebro better while teaching Rust, from your first
 cross-platform and async code. Each one is a real improvement: when you finish, the app (or the CLI)
 actually uses your code.
 
-Every exercise has the same parts:
+Exercises 5 and up are written like real tickets: the problem is described the way a user or a
+teammate would report it, and finding where the code goes is part of the work. Each one has:
 
-- a header: branch, goal, concepts, reading, the files to touch (**Where**) and the test command;
-- **Why**: what the feature is for, so you know what "correct" means;
-- **What to build**: the exact expected behavior (output, rules, edge cases). If something you need
-  is not written here, it's a bug in this document: open an issue;
+- a header: branch, concepts, reading, the test command and, if any, the exercises it requires;
+- **The need**: the problem as it would be reported, without a single file or type name;
+- **Acceptance criteria**: the observable behavior to deliver (output, rules, edge cases). If
+  something you need is not written here, it's a bug in this document: open an issue;
+- **Constraints**: what must stay true while you change things;
 - **Done when**: the checklist to tick before opening the PR;
-- **Hints**, hidden behind a click. Try for 20 minutes before opening them.
+- **Hints**, four of them, hidden behind a click and ordered from vaguest to most precise: the
+  zone of the code, the exact files and types, the trap, the Rust tools. Try for 20 minutes before
+  opening the first one, then open the next one only when you are stuck again.
+
+Exercises 1 to 4 keep an older, guided format: their header also gives the goal and the files to
+touch (**Where**), **Why** explains the feature, and **What to build** describes the implementation.
 
 ## How to work
 
@@ -29,7 +36,11 @@ git switch -c features/ex02_session_display
 
 ### 2. Find the stub and its tests
 
-The **Where** line of the exercise gives the file. Inside it you'll find:
+In exercises 1 to 4, the **Where** line gives the file. From exercise 5 on there is no **Where**:
+finding the zone is part of the exercise. Start from what the user sees (a CLI command, a click in
+the panel), follow the code from there, and open hint 2 only if you are lost: it names the files.
+
+Inside the file you'll find:
 
 - the code to write, marked `EXERCISE N` and ending in `todo!(…)`. `todo!()` compiles but
   panics when it runs: it's a placeholder;
@@ -37,6 +48,7 @@ The **Where** line of the exercise gives the file. Inside it you'll find:
   are skipped by a normal `cargo test`, so the project stays green until you start.
 
 Some exercises (3, 8 to 13) have no prepared tests: their **Done when** says how to check them.
+Writing your own tests is never required: where an exercise suggests some, they are optional.
 
 ### 3. Run the exercise's tests and watch them fail
 
@@ -374,100 +386,174 @@ panel and nobody knows why.
 - With `thiserror`, the message goes in an attribute on each variant: `#[error("…: {0}")]`.
 </details>
 
-### Exercise 5: statistics with iterators
+### Exercise 5: `cerebro stats`, what are my agents doing?
 
 **Branch**: `features/ex05_session_stats`.<br>
-**Goal**: implement `compute_stats`, then print it with `cerebro stats`.<br>
 **Concepts**: iterators and adapters (`flat_map`, `fold`, `max_by_key`, `min_by_key`), closures, `BTreeMap`, `Option` combinators.<br>
 **Read**: Book [ch. 13 (*Iterators and Closures*)](https://doc.rust-lang.org/book/ch13-00-functional-features.html), [ch. 8.3 (*Hash Maps*)](https://doc.rust-lang.org/book/ch08-03-hash-maps.html).<br>
-**Where**: `crates/cerebro-domain/src/entities/stats.rs`, then `crates/cerebro-cli/src/` for the command.<br>
 **Test**: `cargo test -p cerebro-domain stats -- --ignored` (3 tests).<br>
 **Requires**: exercise 3 (the CLI).
 
-**Why.** A quick overview of what Claude is doing right now: how many agents of each kind, which
-session is the busiest, which agent has been running the longest.
+**The need.** "When several sessions run subagents at once, I'd like a quick overview from the
+terminal: how many agents of each kind are running, which session is the busiest, which agent has
+been running the longest. Right now `cerebro stats` only says it's not implemented yet."
 
-**What to build.**
+**Acceptance criteria**
 
-1. `compute_stats(snapshot) -> Stats`, with these rules (also documented on the `Stats` fields):
+- [ ] `cerebro stats` prints three lines:
 
-   | Field | Rule | Empty snapshot |
-   |---|---|---|
-   | `agents_by_kind` | number of agents per `agent.kind`, over all sessions | empty map |
-   | `busiest_session` | id of the session with the most agents; on a tie, the one with the oldest `started_at`. `None` when no session has an agent | `None` |
-   | `longest_running_agent` | the agent with the oldest `started_at`, and its age in ms at `snapshot.taken_at` | `None` |
+  ```text
+  agents       Explore 2, Plan 1
+  busiest      cerebro-6d (3 agents)
+  longest      Explore in cerebro-6d, running for 12min
+  ```
 
-   Rule of the game: **no `for` loop and no `let mut`**. Only iterators.
+- [ ] The figures follow these rules:
 
-2. `cerebro stats` prints:
+  | Figure | Rule | Nothing running |
+  |---|---|---|
+  | agents | number of agents per kind, over all sessions | empty |
+  | busiest | the session with the most agents; on a tie, the one launched first (oldest start). None when no session has an agent | none |
+  | longest | the agent that started first, and its age at the instant of the observation | none |
 
-   ```text
-   agents       Explore 2, Plan 1
-   busiest      cerebro-6d (3 agents)
-   longest      Explore in cerebro-6d, running for 12min
-   ```
+- [ ] Kinds are listed in alphabetical order.
+- [ ] Sessions are shown by **name**, never by their internal id.
+- [ ] With no agent at all, `cerebro stats` prints `no running agent` instead of the three lines.
+- [ ] The numbers agree with `cerebro list` (same sessions, same agent counts).
 
-   - kinds in the map's order (alphabetical, that's why it's a `BTreeMap`);
-   - sessions by **name**, not by id: `Stats` only holds ids, so look the session up in the
-     snapshot;
-   - with no agent at all, print `no running agent` instead of the three lines.
+**Constraints**
+
+- The figures are computed in the domain, which stays pure (`docs/ARCHITECTURE.md`): no I/O, and
+  no clock of its own. "Now" is the instant the observation was taken.
+- Rule of the game: the computation uses iterators only, **no `for` loop and no `let mut`**.
+- `cerebro list`, `cerebro hooks` and the existing tests keep working.
 
 **Done when**
 
-- [ ] the 3 tests pass without `--ignored`;
-- [ ] `stats.rs` contains no `for` and no `let mut`;
-- [ ] `cargo run -p cerebro-cli -- stats` prints the format above, consistent with `cerebro list`;
-- [ ] Clippy is silent.
+- [ ] the 3 prepared tests pass without `--ignored` (the `#[ignore = "exercise 5"]` lines are removed);
+- [ ] the statistics code contains no `for` and no `let mut`;
+- [ ] `npm run test:rust`, `npm run lint:rust` and `cargo fmt --all` are clean;
+- [ ] `cargo run -p cerebro-cli -- stats` prints the format above, consistent with `cerebro list`.
 
-<details><summary>Hints</summary>
+<details><summary>Hint 1: the zone</summary>
+
+Which layer computes numbers from a snapshot, and which one prints them? Computing is pure logic on
+entities: the domain, `cerebro-domain`. Printing is presentation: the CLI, `cerebro-cli`, right
+next to the `list` command.
+</details>
+
+<details><summary>Hint 2: files and types</summary>
+
+- `crates/cerebro-domain/src/entities/stats.rs`: the `Stats` struct, whose fields document the
+  rules (`agents_by_kind: BTreeMap<String, usize>`, `busiest_session: Option<SessionId>`,
+  `longest_running_agent: Option<(AgentId, u64)>`, the age in ms at `snapshot.taken_at`), and the
+  stub `compute_stats(snapshot: &Snapshot) -> Stats` (`EXERCISE 5`, `todo!`). The tests at the
+  bottom: `empty_snapshot_gives_empty_stats`, `counts_and_records`, `tie_goes_to_the_oldest_session`.
+- The data: `agent.kind` for the kind, `session.started_at` and `agent.started_at` for the starts,
+  `snapshot.taken_at` for "now". `compute_stats` is re-exported by `cerebro_domain::entities`.
+- `crates/cerebro-cli/src/main.rs`: the last arm of `match command`, which prints
+  `not implemented yet: see EXERCISES.md, exercise 5`.
+</details>
+
+<details><summary>Hint 3: the trap</summary>
+
+- `max_by_key` returns the *last* maximum. A real snapshot lists sessions by launch time, so on a
+  tie the newest one wins: the wrong one. The prepared tie test lists the newest session first, so
+  it can pass by luck: don't rely on the order.
+- A plain "max over sessions" still returns a session when every session has 0 agents: `busiest`
+  must be `None` then.
+- `Stats` only holds ids. To print a session's name, and the kind and session of the longest
+  agent, look them up in the snapshot.
+- Don't read a clock for the age: `taken_at` already is "now". `Timestamp::since` already
+  saturates at zero.
+</details>
+
+<details><summary>Hint 4: the Rust tools</summary>
 
 - `flat_map` turns "sessions, each with agents" into a single iterator of agents.
 - Counting with `fold`: the accumulator is the map, and a closure *parameter* may be `mut`
-  (`|mut map, kind| …`): that's allowed by the rule.
-- `max_by_key` returns the *last* maximum. To make the oldest session win a tie, put the age in
-  the key too: `std::cmp::Reverse` flips an order.
-- `Timestamp::since` already saturates at zero.
+  (`|mut map, kind| …`): that's allowed by the rule. `map.entry(key).or_insert(0)` does the rest.
+- To make the oldest session win a tie with `max_by_key`, put the age in the key too:
+  `std::cmp::Reverse` flips an order. `min_by_key` returns the *first* minimum.
+- `humanize_duration` (`cerebro_domain::time`) gives the `12min` of the last line.
 </details>
 
-### Exercise 6: Terminal.app support
+### Exercise 6: clicking a card doesn't find my Terminal.app tab
 
 **Branch**: `features/ex06_terminal_app_focus`.<br>
-**Goal**: clicking a card focuses the right tab in macOS Terminal, not only in iTerm2.<br>
 **Concepts**: implementing a trait for a new type, trait objects (`Box<dyn TabSelector>`), testing with fakes, raw strings.<br>
 **Read**: Book [ch. 18.2 (*Trait Objects*)](https://doc.rust-lang.org/book/ch18-02-trait-objects.html); the Reference, [*Raw string literals*](https://doc.rust-lang.org/reference/tokens.html#raw-string-literals), for `r#"…"#`.<br>
-**Where**: `crates/cerebro-data/src/strategies/focus/terminal_app.rs`, then `MacFocuser::new` in `focus/mod.rs`.<br>
 **Test**: `cargo test -p cerebro-data terminal_app -- --ignored` (3 tests).
 
-**Why.** Clicking a card brings the session's terminal to the front. `MacFocuser` finds the app
-hosting the session, then asks each `TabSelector` "do you handle this app?". Only iTerm2 has a
-selector today, so Terminal.app users get the app activated but not the right tab.
+**The need.** "I use the macOS Terminal, not iTerm2. When I click a session's card, Terminal comes
+to the front, but on whatever tab was active, not the one running that session. My colleagues on
+iTerm2 get the right tab."
 
-**What to build.** `TerminalAppTabSelector`, the sibling of `ITermTabSelector` (`iterm.rs`, read it
-first):
+**Acceptance criteria**
 
-- `handles(bundle_path)`: `true` when the path is Terminal.app's
-  (`/System/Applications/Utilities/Terminal.app`), `false` for any other app (e.g. iTerm).
-- `select(runner, tty)`: run an AppleScript with `osascript` through the `runner` (never
-  directly). The script looks for the Terminal tab whose `tty` equals the given one (e.g.
-  `/dev/ttys007`), selects it, brings its window to the front, and prints `found`; if no tab
-  matches, it prints `missing`. `select` returns `Ok(true)` for `found`, `Ok(false)` for
-  `missing`, and an error if `osascript` can't run.
-- Register the selector in `MacFocuser::new`, next to iTerm's.
+- [ ] Clicking the card of a session running in Terminal.app selects the Terminal tab whose tty is
+  the session's (e.g. `/dev/ttys007`), brings its window to the front and activates Terminal.
+- [ ] Terminal.app is recognized by its path, `/System/Applications/Utilities/Terminal.app`. Any
+  other app (e.g. `/Applications/iTerm.app`) is not handled by this new support.
+- [ ] No tab matches: the click falls back to what it does today, activating Terminal.
+- [ ] The AppleScript can't run: it's an error, never a silent success.
+- [ ] iTerm2 keeps working exactly as before.
 
-The tests use `ScriptedRunner`, a fake `CommandRunner` that records the commands and returns a
-canned answer: they never launch AppleScript.
+**Constraints**
+
+- The AppleScript runs with `osascript` through the app's command runner, never directly, so tests
+  never launch AppleScript.
+- Terminal specifics stay in the data layer: the domain only knows that a terminal can be focused
+  (`docs/ARCHITECTURE.md`).
+- The existing focus tests keep passing.
 
 **Done when**
 
-- [ ] the 3 tests pass without `--ignored`;
+- [ ] the 3 prepared tests pass without `--ignored` (the `#[ignore = "exercise 6"]` lines are removed);
+- [ ] `npm run test:rust`, `npm run lint:rust` and `cargo fmt --all` are clean;
 - [ ] in the app, clicking the card of a session running in Terminal.app selects its tab (try with
-  two Terminal windows and several tabs);
-- [ ] Clippy is silent.
+  two Terminal windows and several tabs).
 
-<details><summary>Hints</summary>
+<details><summary>Hint 1: the zone</summary>
+
+Who brings a terminal to the front? Not the domain: it only knows the `TerminalFocuser` port. The
+macOS implementation is a strategy of the data layer, `cerebro-data`, in the terminal focus
+strategies. iTerm2 is already supported there: its support is your model.
+</details>
+
+<details><summary>Hint 2: files and types</summary>
+
+- `crates/cerebro-data/src/strategies/focus/terminal_app.rs`: `TerminalAppTabSelector`, with the
+  stubs `handles(bundle_path)` and `select(runner, tty)` (`EXERCISE 6`, `todo!`), and the tests
+  `handles_only_terminal_app`, `runs_an_applescript_mentioning_the_tty`, `reports_a_missing_tab`.
+- `crates/cerebro-data/src/strategies/focus/iterm.rs`: `ITermTabSelector`, its sibling. Read it first.
+- `crates/cerebro-data/src/strategies/focus/mod.rs`: the `TabSelector` trait, and `MacFocuser::new`
+  (comment `EXERCISE 6 adds…`), where the selector is registered next to iTerm's. `MacFocuser`
+  finds the app hosting the session, then asks each `TabSelector` "do you handle this app?".
+- The contract of `select`: the script prints `found` or `missing`; `select` returns `Ok(true)`
+  for `found`, `Ok(false)` for `missing`, and an error if `osascript` can't run.
+- The tests use `ScriptedRunner` (`focus/mod.rs`, module `fake`), a fake `CommandRunner` that
+  records the commands and returns a canned answer.
+</details>
+
+<details><summary>Hint 3: the trap</summary>
+
+- The prepared tests call the selector directly. Forget to register it in `MacFocuser::new` and
+  they all pass, while a click still only activates Terminal: the manual check is what catches it.
+- "Can't run" has two faces: the runner returns `Err` (no `osascript`), or `osascript` runs and
+  fails (`output.success` is `false`). `iterm.rs` turns both into `DomainError::Platform`.
+- `osascript` ends its output with a newline (`"found\n"` in the tests): trim before comparing.
+- Terminal's AppleScript differs from iTerm2's: the application is called `"Terminal"`, and the
+  `tty` belongs to the tab (iTerm2 has a `sessions` level below tabs). `set index of w to 1`
+  reorders windows but does not bring Terminal forward: `activate` does.
+</details>
+
+<details><summary>Hint 4: the Rust tools</summary>
 
 - Compare with `iterm.rs` line by line: only the app name and the script change.
-- A raw string `r#"…"#` lets you write the AppleScript with its quotes, unescaped.
+- A raw string `r#"…"#` lets you write the AppleScript with its quotes, unescaped, and `format!`
+  can still insert `{tty}` in it.
+- `str::ends_with`, `map_err`, `?`; `Box<dyn TabSelector>` in the selectors list.
 - The script:
 
 ```applescript
@@ -487,76 +573,117 @@ return "missing"
 ```
 </details>
 
-### Exercise 7: borrowing instead of copying
+### Exercise 7: stop copying the `ps` output every second
 
 **Branch**: `refactor/ex07_borrowed_ps_parsing`.<br>
-**Goal**: parse `ps` output without allocating, returning slices of the input.<br>
 **Concepts**: references, lifetimes (`PsLine<'a>`), `&str` slicing, `split_whitespace`, `Iterator::eq`.<br>
 **Read**: Book [ch. 4 (*Understanding Ownership*)](https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html), [ch. 10.3 (*Validating References with Lifetimes*)](https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html).<br>
-**Where**: `crates/cerebro-data/src/services/process_inspector.rs` (`PsLine`, `parse_ps_line_borrowed`).<br>
 **Test**: `cargo test -p cerebro-data borrowed_parse -- --ignored` (1 test).
 
-**Why.** Every second, Cerebro runs `ps` to check that each session's process is still alive and is
-still the same process (a pid can be reused). `parse_ps_line` builds a `Vec` and a new `String` for
-every line just to normalize spaces. A `&str` pointing into `ps`'s output is enough.
+**The need.** A teammate: "Every second, Cerebro runs `ps` to check that each session's process is
+still alive and is still the same process (a pid can be reused). Reading that code, I saw that every
+line of `ps` output is cut into a list and glued back into a brand new string, just to normalize
+the spaces in the start time. A view into `ps`'s own output would do: can we parse it without
+allocating?"
 
-**What to build.**
+**Acceptance criteria**
 
-1. `parse_ps_line_borrowed(line) -> Option<PsLine<'_>>`: same input as `parse_ps_line`
-   (`"  52117 Thu Oct 15  8:43:57 2026"`), but `start` is a slice of `line`, spaces included
-   (`"Thu Oct 15  8:43:57 2026"`). `None` when the pid is not a number or the start time is empty.
-2. `PsLine::started_at(recorded)`: `true` when `self.start` and `recorded` have the same words,
-   whatever the spaces between them (`"Oct 15  8:43"` equals `"Oct 15 8:43"`). No allocation.
-3. Switch `PsProcessInspector::inspect` to `parse_ps_line_borrowed`. `ProcessInfo.start` stays a
-   `String` because it outlives `ps`'s output: convert there, once per line, with `to_owned()`. Since
-   `start` now keeps the raw spaces, check that `same_start` in `datasources/claude_code.rs` still
-   matches (it compares word by word).
-4. Delete the old `parse_ps_line` and its test, then follow the compiler errors.
+- [ ] Parsing `"  52117 Thu Oct 15  8:43:57 2026"` gives the pid `52117` and the start time
+  `"Thu Oct 15  8:43:57 2026"`: a slice of the input line, spaces included, not a copy.
+- [ ] A line whose pid is not a number, or whose start time is empty, is rejected (e.g. `garbage`).
+- [ ] A parsed start time equals a recorded one when they have the same words, whatever the spaces
+  between them: `"Oct 15  8:43"` equals `"Oct 15 8:43"`, and `8:43:58` differs from `8:43:57`.
+  The comparison allocates nothing.
+- [ ] Sessions are filtered exactly as before: live sessions stay listed and a recycled pid is
+  still rejected, even though the start time now keeps its raw spaces.
+- [ ] Only the borrowing parser is left: the old copying parser and its test are deleted.
+
+**Constraints**
+
+- It's a refactor: no visible behavior changes, and every test of the crate passes.
+- The start time kept for each process outlives `ps`'s output, so it stays an owned string: it is
+  converted there, once per line.
 
 **Done when**
 
-- [ ] `borrowed_parse_points_into_the_input` passes without `--ignored` (it checks that `start`
-  points into the input, i.e. no copy was made);
-- [ ] `parse_ps_line` no longer exists, and every test of the crate passes;
-- [ ] Clippy is silent.
+- [ ] `borrowed_parse_points_into_the_input` passes without `--ignored`, and its `#[ignore]` line is
+  removed (it checks that `start` points into the input, i.e. no copy was made);
+- [ ] the old parser no longer exists, and every test of the crate passes;
+- [ ] `npm run test:rust`, `npm run lint:rust` and `cargo fmt --all` are clean.
 
-<details><summary>Hints</summary>
+<details><summary>Hint 1: the zone</summary>
+
+Who runs `ps`? An OS-facing service of the data layer, `cerebro-data`, used by the Claude Code
+source to drop sessions whose process is gone or was replaced.
+</details>
+
+<details><summary>Hint 2: files and types</summary>
+
+- `crates/cerebro-data/src/services/process_inspector.rs`:
+  - `PsLine<'a>` (`pid`, `start: &'a str`) and its stub `started_at(recorded)` (`EXERCISE 7`, `todo!`);
+  - the stub `parse_ps_line_borrowed(line) -> Option<PsLine<'_>>`: same input as the old one;
+  - the old `parse_ps_line` and its test `parses_lines`, to delete at the end;
+  - `PsProcessInspector::inspect`, to switch to `parse_ps_line_borrowed`. `ProcessInfo.start` stays
+    a `String`: convert with `to_owned()`.
+- `crates/cerebro-data/src/datasources/claude_code.rs`: `same_start`, which compares the recorded
+  and actual start times. Check that it still matches now that `start` keeps the raw spaces (it
+  compares word by word).
+- `crates/cerebro-data/src/services/mod.rs` re-exports both parsers.
+</details>
+
+<details><summary>Hint 3: the trap</summary>
+
+- Deleting `parse_ps_line` breaks the `pub use` in `services/mod.rs` and the `parses_lines` test:
+  follow the compiler errors.
+- Try returning a `PsLine` borrowed from a `String` created inside the function: read the error,
+  that's the lesson of the exercise. Any `start` that comes from a new `String` (a `join`, a
+  `replace`) also fails the pointer check of the test.
+- Trim what follows the pid, so `start` has no stray leading or trailing space and a line ending
+  right after the pid counts as an empty start time.
+</details>
+
+<details><summary>Hint 4: the Rust tools</summary>
 
 - `trim_start()` then `split_once(char::is_whitespace)` give two `&str` pointing into the input.
 - `a.split_whitespace().eq(b.split_whitespace())` compares word by word without building a `String`.
-- Try returning a `PsLine` borrowed from a `String` created inside the function: read the error,
-  that's the lesson of the exercise.
+- `str::parse::<u32>().ok()?` and `Option::filter` keep the parser short.
 </details>
 
 ---
 
 ## Level 3: Systems programming
 
-### Exercise 8: react instantly with a file watcher
+### Exercise 8: new subagents take up to 2 seconds to appear
 
 **Branch**: `refactor/ex08_file_watcher`.<br>
-**Goal**: update the panel as soon as a session or agent file changes, instead of polling every 1-2 s.<br>
 **Concepts**: threads, channels (`std::sync::mpsc`), debouncing, external crates (`notify`).<br>
 **Read**: Book [ch. 16 (*Fearless Concurrency*)](https://doc.rust-lang.org/book/ch16-00-concurrency.html); the [`notify` crate docs](https://docs.rs/notify).<br>
-**Where**: `src-tauri/src/poller.rs` (and a new `src-tauri/src/watcher.rs` if you like).<br>
 **Test**: none prepared; see **Done when**.
 
-**Why.** The poller (`poller.rs`) calls `refresh` every second while the panel is visible, every 2
-seconds otherwise. A new subagent can take up to 2 seconds to appear, and Cerebro works even when
-nothing changes. The files under `~/.claude/sessions` and `~/.cerebro` change exactly when
-something happens: watching them is both faster and cheaper.
+**The need.** "When a session starts a subagent, its character can take up to 2 seconds to show up
+in the panel. And Cerebro keeps checking every second while the panel is visible, every 2 seconds
+otherwise, even when nothing happens. The files under `~/.claude/sessions` and `~/.cerebro` change
+exactly when something happens: reacting to them would be both faster and cheaper."
 
-**What to build.**
+**Acceptance criteria**
 
-1. Add `notify` to `src-tauri/Cargo.toml` and watch, recursively:
-   `~/.claude/sessions` (`Paths::claude_sessions_dir`) and `~/.cerebro` (`Paths::cerebro_dir`). Either may not exist yet at startup (before the first Claude session
-   or the first hook): the app must still start and pick them up once they appear.
-2. Debounce: a burst of events within 150 ms triggers a **single** `refresh`.
-3. Keep a slow safety poll every 10 s: a process can die without touching any file.
-4. `refresh` stays the only function that observes and emits: the watcher and the safety poll
-   both call it.
-5. Ignore changes to `~/.cerebro/assignments.json`: `refresh` writes it itself, which would trigger
-   a new refresh, in a loop.
+- [ ] A change anywhere under `~/.claude/sessions` or `~/.cerebro` (subfolders included) updates
+  the panel right away: starting a subagent shows its character in under half a second.
+- [ ] A burst of changes within 150 ms triggers a **single** refresh.
+- [ ] A slow safety refresh still runs every 10 s, because a process can die without touching any
+  file: killing a Claude process (`kill <pid>`) removes its card within 10 s.
+- [ ] Either folder may not exist yet at startup (before the first Claude session or the first
+  hook): the app still starts, and picks it up once it appears.
+- [ ] Deleting `~/.cerebro` while the app runs does not crash it.
+- [ ] Changes to `~/.cerebro/assignments.json` are ignored: Cerebro writes that file itself during
+  a refresh, which would trigger a new refresh, in a loop.
+- [ ] Idle CPU does not increase compared to `develop` (Activity Monitor).
+
+**Constraints**
+
+- One function stays the only one that observes and emits: the watcher and the safety refresh
+  both call it. The places that already ask for a refresh keep working.
+- Deciding *when* to observe is the app's job: the domain and the data layer don't change.
 
 **Done when**
 
@@ -564,199 +691,413 @@ something happens: watching them is both faster and cheaper.
 - [ ] killing a Claude process (`kill <pid>`) removes its card within 10 s;
 - [ ] idle CPU does not increase compared to `develop` (Activity Monitor);
 - [ ] deleting `~/.cerebro` while the app runs does not crash it;
-- [ ] Clippy is silent.
+- [ ] `npm run test:rust`, `npm run lint:rust` and `cargo fmt --all` are clean.
 
-<details><summary>Hints</summary>
+<details><summary>Hint 1: the zone</summary>
 
-- `notify::recommended_watcher(tx)` sends events into an `mpsc::Sender`.
+Who decides when to observe? Not the domain, which observes when asked: the desktop app's background
+loop, in `src-tauri`.
+</details>
+
+<details><summary>Hint 2: files and types</summary>
+
+- `src-tauri/src/poller.rs`: `start`, the thread that loops with `VISIBLE_INTERVAL` (1 s) or
+  `HIDDEN_INTERVAL` (2 s) depending on `panel_visible`, and `refresh`, the only function that
+  observes and emits. `refresh` is also called from `panel.rs` and `commands.rs`.
+- A new `src-tauri/src/watcher.rs` if you like (declare it in `src-tauri/src/lib.rs`).
+- `notify` goes in `src-tauri/Cargo.toml`.
+- The folders: `Paths::claude_sessions_dir` and `Paths::cerebro_dir`; the file to ignore:
+  `Paths::assignments_file`. All in `crates/cerebro-protocol/src/lib.rs`, built with `Paths::detect()`.
+</details>
+
+<details><summary>Hint 3: the trap</summary>
+
+- `assignments.json` is written atomically: `write_json_atomic` (`cerebro-protocol`) writes
+  `assignments.json.tmp`, then renames it. Ignore only the exact `assignments.json` path and the
+  temporary file's events still start the loop.
+- The watcher stops when it is dropped: keep it alive as long as the loop runs, not just inside the
+  function that creates it.
+- Watching a folder that doesn't exist fails. Watch its parent instead and filter events by path.
+</details>
+
+<details><summary>Hint 4: the Rust tools</summary>
+
+- `notify::recommended_watcher(tx)` sends events into an `mpsc::Sender`; `watch(path,
+  RecursiveMode::Recursive)` covers subfolders.
 - Debounce loop: block on `rx.recv_timeout(10 s)`; on an event, drain with
   `rx.recv_timeout(150 ms)` until it times out, then refresh once. A timeout on the first wait is
   your safety poll.
-- A missing directory can be handled by watching its parent and filtering events by path.
+- `Path::starts_with` and `Path::file_name` to filter events by path.
 </details>
 
-### Exercise 9: a configuration file
+### Exercise 9: let me choose my characters and rooms
 
 **Branch**: `features/ex09_config_file`.<br>
-**Goal**: `~/.cerebro/config.toml` lets the user prefer characters, ban rooms and tune the refresh pace.<br>
 **Concepts**: `serde` derive, `#[serde(default)]`, `Default`, the `toml` crate, validating input, passing config through layers.<br>
 **Read**: Book [ch. 5 (*Structs*)](https://doc.rust-lang.org/book/ch05-00-structs.html); serde.rs [*Attributes*](https://serde.rs/attributes.html) page.<br>
-**Where**: a new `Config` type (reading it touches the file system, so `cerebro-data` or
-`cerebro-protocol`), consumed when building the catalog (`src-tauri/src/injector.rs`), by the casting
-(`crates/cerebro-domain/src/strategies/casting.rs`) and by the poller.<br>
-**Test**: you write them (see below).
+**Test**: none prepared; writing your own is optional (see **Done when**).
 
-**Why.** Characters and rooms are picked pseudo-randomly. Users want their favorites on screen
-and some rooms gone.
+**The need.** "Characters and rooms are picked pseudo-randomly. I want my favorites on screen and
+some rooms gone, and I'd like to tune how often the panel refreshes. A small file I can edit,
+`~/.cerebro/config.toml`, would be perfect."
 
-**What to build.** The file, every key optional:
+**Acceptance criteria**
 
-```toml
-favorite_characters = ["wolverine", "storm"]   # ids from assets/characters/characters.json
-banned_rooms = ["kitchen"]                     # ids from assets/rooms/rooms.json
-refresh_seconds = 5
-```
+- [ ] `~/.cerebro/config.toml` is read at startup. Every key is optional:
 
-| Key | Effect | Default |
-|---|---|---|
-| `favorite_characters` | a new session's *lead* character is picked among the favorites first, as long as one is free in its room; otherwise the usual pick | `[]` |
-| `banned_rooms` | these rooms are never picked | `[]` |
-| `refresh_seconds` | pace of the poll (the safety poll if exercise 8 is done); allowed 1 to 60 | 1 (2 when hidden), or 10 after exercise 8 |
+  ```toml
+  favorite_characters = ["wolverine", "storm"]   # ids from assets/characters/characters.json
+  banned_rooms = ["kitchen"]                     # ids from assets/rooms/rooms.json
+  refresh_seconds = 5
+  ```
 
-Validation, never fatal: the app always starts.
+  | Key | Effect | Default |
+  |---|---|---|
+  | `favorite_characters` | a new session's *lead* character is picked among the favorites first, as long as one is free in its room; otherwise the usual pick | `[]` |
+  | `banned_rooms` | these rooms are never picked | `[]` |
+  | `refresh_seconds` | pace of the poll (the safety poll if exercise 8 is done); allowed 1 to 60 | 1 (2 when hidden), or 10 after exercise 8 |
 
-- missing file → all defaults;
-- invalid TOML → all defaults, and a warning on stderr;
-- unknown character or room id → ignored, with a warning;
-- `refresh_seconds` out of range → default, with a warning;
-- banning every room → the ban is ignored (the catalog needs at least one room), with a warning.
+- [ ] Validation is never fatal: the app always starts.
+  - missing file → all defaults;
+  - invalid TOML → all defaults, and a warning on stderr;
+  - unknown character or room id → ignored, with a warning;
+  - `refresh_seconds` out of range → default, with a warning;
+  - banning every room → the ban is ignored (at least one room is needed), with a warning.
+- [ ] Already assigned characters and rooms keep their place: the config only affects new picks.
+- [ ] Editing the file and restarting the app changes the picks of new sessions.
 
-**Design rule.** The domain never reads files. `casting.rs` receives plain data (e.g. a filtered
-`Catalog` and a list of favorite `CharacterId`s), never a path or a `Config` read from disk. Already
-assigned characters and rooms keep their place: the config only affects new picks.
+**Constraints**
+
+- Design rule: the domain never reads files (`docs/ARCHITECTURE.md`). The casting receives plain
+  data (e.g. a filtered catalog and a list of favorite character ids), never a path or a config
+  read from disk.
+- Reading the file touches the file system, so it lives outside the domain.
+- The existing casting tests keep passing.
 
 **Done when**
 
-- [ ] tests written **before** the code cover at least: missing file, invalid TOML, unknown id,
-  out-of-range `refresh_seconds`, every room banned, a favorite actually picked;
 - [ ] editing the file and restarting the app changes the picks of new sessions;
-- [ ] Clippy is silent.
+- [ ] `npm run test:rust`, `npm run lint:rust` and `cargo fmt --all` are clean;
+- [ ] optional: tests written **before** the code, covering at least a missing file, invalid TOML,
+  an unknown id, an out-of-range `refresh_seconds`, every room banned, and a favorite actually picked.
 
-<details><summary>Hints</summary>
+<details><summary>Hint 1: the zone</summary>
 
-- `#[serde(default)]` on the struct + `impl Default` gives you "every key optional" for free.
-- Add a `config_file()` method to `Paths`, next to `assignments_file()`.
-- Filtering banned rooms before `Catalog::new` keeps the casting untouched for that part.
+Which layers does a setting cross? Three. Reading the file is I/O: `cerebro-data` or
+`cerebro-protocol`. Wiring happens once, at startup: the app's injector, in `src-tauri`. Using the
+values belongs to the casting (domain) for the picks, and to the app's background loop for the pace.
 </details>
 
-### Exercise 10: Windows and Linux
+<details><summary>Hint 2: files and types</summary>
+
+- A new `Config` type in `cerebro-data` or `cerebro-protocol`, and a `config_file()` method on
+  `Paths` (`crates/cerebro-protocol/src/lib.rs`), next to `assignments_file()`. `toml` goes in that
+  crate's `Cargo.toml`.
+- `src-tauri/src/injector.rs`, `build()`: builds the catalog with `EmbeddedCatalog.catalog()`
+  (`crates/cerebro-data/src/repositories/embedded_catalog.rs`) and hands it to `ObserveSessions`
+  through `ObserveSessionsDeps { catalog, .. }`.
+- `Catalog::new(characters, rooms)` (`crates/cerebro-domain/src/entities/catalog.rs`) fails when
+  either list is empty.
+- `crates/cerebro-domain/src/strategies/casting.rs`: `cast_all`, called by `ObserveSessions::execute`
+  (`crates/cerebro-domain/src/usecases/observe_sessions.rs`), then `pick_room` and `pick_character`.
+  The lead's key is `ActorKey::Lead`.
+- The pace: `VISIBLE_INTERVAL` and `HIDDEN_INTERVAL` in `src-tauri/src/poller.rs`.
+- The CLI builds its own catalog too (`crates/cerebro-cli/src/injector.rs`): decide whether it
+  should honor the file.
+</details>
+
+<details><summary>Hint 3: the trap</summary>
+
+- Filtering banned rooms out before `Catalog::new` keeps the casting untouched for that part, but
+  `pick_room` and `pick_character` only keep an existing pick if it is still in the catalog, and
+  picks are reloaded from `~/.cerebro/assignments.json` at startup. So a session already sitting
+  in a newly banned room moves at the next start. Decide
+  whether that is acceptable for a ban (and say so in a comment), or pass the ban to the casting
+  separately.
+- Favorites only change *new* lead picks: a lead or agent that already has a character keeps it.
+- "Never fatal" means no `?` that bubbles up to a failed startup: a ban of every room would make
+  `Catalog::new` fail and the app would not start.
+</details>
+
+<details><summary>Hint 4: the Rust tools</summary>
+
+- `#[serde(default)]` on the struct + `impl Default` gives you "every key optional" for free.
+- `toml::from_str`; `std::fs::read_to_string`, whose `io::ErrorKind::NotFound` is the missing file.
+- `(1..=60).contains(&value)` for the range; `Vec::retain` to drop unknown or banned ids.
+- `pick_free` (`crates/cerebro-domain/src/rng.rs`) picks deterministically in any list, including
+  a list of favorites.
+</details>
+
+### Exercise 10: Cerebro on Windows and Linux
 
 **Branch**: `features/ex10_windows_linux`.<br>
-**Goal**: Cerebro works outside macOS.<br>
 **Concepts**: `#[cfg(target_os = "…")]` vs `cfg!`, platform crates, conditional dependencies in `Cargo.toml`.<br>
 **Read**: *The Cargo Book*, ["Platform specific dependencies"](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#platform-specific-dependencies); the [`sysinfo` crate](https://docs.rs/sysinfo).<br>
-**Where**: `crates/cerebro-data/src/services/process_inspector.rs` (the `cfg!(windows)` branch), `crates/cerebro-data/src/strategies/focus/mod.rs` (`platform_focuser`).<br>
-**Test**: you write them, with fake runners like the existing ones.
+**Test**: none prepared; tests with fake runners like the existing ones are optional.
 
-**Why.** Sessions are listed on every OS, but two pieces are macOS-only: process verification on
-Windows trusts the registry blindly (a reused pid shows a ghost session), and clicking a card does
-nothing outside macOS (`UnsupportedFocuser`).
+**The need.** "Sessions are listed on every OS, but two things only work on macOS. On Windows, a
+pid reused by another program shows a ghost session: Cerebro trusts Claude Code's registry blindly.
+And outside macOS, clicking a card does nothing. We'd also like installers for Windows and Linux."
 
-**What to build.** Four independent parts; one PR each is fine.
+**Acceptance criteria.** Four independent parts; one PR each is fine.
 
-1. **Windows start times**: in `PsProcessInspector::inspect`, get real process start times with
-   `sysinfo` (a Windows-only dependency) and format them exactly like Claude Code's `procStart` on
-   Windows. Open a registry file on a Windows machine to see that format: don't guess it.
-2. **Linux focus**: a focuser that finds the window of the terminal hosting the session
-   (`wmctrl -lp` lists windows with their pid; walk up from the Claude pid as `process_tree.rs`
-   does on macOS) and raises it (`wmctrl -ia <window id>`). If `wmctrl` is missing, return
-   `FocusOutcome::NotFound`, never an error.
-3. **Windows focus**: a focuser that brings the terminal window to the front.
-4. **Installers in CI**: build the Windows and Linux installers in GitHub Actions with
-   `tauri-action`.
+1. **Windows start times**
+   - [ ] On Windows, a session whose pid now belongs to another process is hidden, like on macOS.
+   - [ ] The start time Cerebro gets from Windows is formatted exactly like Claude Code's
+     `procStart` on Windows (in `~/.claude/sessions/<pid>.json`). Open a registry file on a
+     Windows machine to see that format: don't guess it.
+2. **Linux focus**
+   - [ ] Clicking a card raises the window of the terminal hosting the session: `wmctrl -lp` lists
+     windows with their pid, the terminal is found by walking up the process tree from the Claude
+     pid, and `wmctrl -ia <window id>` raises it.
+   - [ ] If `wmctrl` is missing, the click reports "not found", never an error.
+3. **Windows focus**
+   - [ ] Clicking a card brings the terminal window to the front.
+4. **Installers in CI**
+   - [ ] The Windows and Linux installers are built in GitHub Actions with `tauri-action`.
 
-**Done when**, for each part: tested with fakes, checked on the real OS, and CI green on the
-three platforms.
+**Constraints**
 
-### Exercise 11 (boss): tmux
+- macOS behavior doesn't change.
+- A platform-only crate is declared for its platform only (`sysinfo` is a Windows-only dependency).
+- The domain doesn't change: platforms are a data-layer concern (`docs/ARCHITECTURE.md`).
+- The workspace forbids `unsafe` code.
+
+**Done when**, for each part:
+
+- [ ] checked on the real OS;
+- [ ] CI green on the three platforms;
+- [ ] `npm run test:rust`, `npm run lint:rust` and `cargo fmt --all` are clean;
+- [ ] optional: tested with fakes, like the existing focus and `ps` tests.
+
+<details><summary>Hint 1: the zone</summary>
+
+Where does Cerebro talk to the OS? In the data layer, `cerebro-data`: the service that inspects
+processes, and the strategies that focus a terminal. The installers are a matter for
+`.github/workflows/`.
+</details>
+
+<details><summary>Hint 2: files and types</summary>
+
+- `crates/cerebro-data/src/services/process_inspector.rs`: `PsProcessInspector::inspect`, whose
+  `cfg!(windows)` branch (`EXERCISE 10`) returns `ProcessInfo { start: None }` for every pid.
+  The recorded value is `RegistryEntry.proc_start` (`crates/cerebro-data/src/models/registry_entry.rs`).
+- `crates/cerebro-data/src/strategies/focus/mod.rs`: `platform_focuser`, which returns `MacFocuser`
+  on macOS and `UnsupportedFocuser` (always `FocusOutcome::NotFound`) elsewhere. The walk up the
+  process tree on macOS is `find_host_app` in `process_tree.rs`.
+- The fakes: `ScriptedRunner` (`focus/mod.rs`, module `fake`) and `FakeRunner` in the tests of
+  `process_inspector.rs`. Every external command goes through `CommandRunner`.
+- `.github/workflows/release.yml` already runs `tauri-apps/tauri-action` on `ubuntu-22.04` and
+  `windows-latest` when a version is tagged: part 4 may only need checking. `.github/workflows/ci.yml`
+  runs the Rust job.
+</details>
+
+<details><summary>Hint 3: the trap</summary>
+
+- `cfg!(windows)` is an ordinary boolean: both branches are compiled on every OS. Code calling a
+  Windows-only crate then fails to compile on macOS: put it behind `#[cfg(windows)]` instead.
+- A missing program is not a failed command: `CommandRunner::run` returns `Err`
+  (`io::ErrorKind::NotFound`) when `wmctrl` isn't installed. That case must become `NotFound`.
+- On macOS, `ps` is run with `TZ=UTC` because Claude Code records `procStart` in UTC. Don't assume
+  the same on Windows: check the format and the time zone in a real registry file.
+- `unsafe_code = "forbid"` in the root `Cargo.toml`: calling Win32 functions directly is out. Look
+  for a safe route for Windows focus.
+- On `develop`, the Rust CI job only runs on macOS. The three platforms run for `main` or a manual
+  `workflow_dispatch`.
+</details>
+
+<details><summary>Hint 4: the Rust tools</summary>
+
+- `[target.'cfg(windows)'.dependencies]` in `Cargo.toml`, and `#[cfg(target_os = "linux")]` on
+  items.
+- `sysinfo` gives each process its start time in seconds since 1970.
+- `str::lines`, `split_whitespace`, `str::parse` for `wmctrl -lp`'s columns.
+</details>
+
+### Exercise 11 (boss): clicking a session inside tmux does nothing
 
 **Branch**: `features/ex11_tmux_focus`.<br>
-**Goal**: clicking a session running inside tmux selects the right tmux window and pane, then focuses the terminal.<br>
 **Concepts**: everything above, plus parsing command output robustly.<br>
 **Read**: the [tmux manual](https://man7.org/linux/man-pages/man1/tmux.1.html) (`FORMATS` section).<br>
-**Where**: `crates/cerebro-data/src/strategies/focus/` (a new `tmux.rs`) and `MacFocuser::focus`.<br>
-**Test**: you write them, with `ScriptedRunner`.
+**Test**: none prepared; tests with `ScriptedRunner` are optional.
 
-**Why.** Inside tmux, Claude's parent process is the tmux server, not a terminal app.
-`find_host_app` finds no `.app` above it, so `MacFocuser::focus` returns `NotFound` and nothing
-happens.
+**The need.** "I run Claude Code inside tmux. Clicking its card does nothing at all: no terminal
+comes forward, and tmux stays on whatever window and pane it was showing."
 
-**What to build.** When `find_host_app` finds nothing:
+**Acceptance criteria.** When the session has no terminal app directly above it:
 
-1. Get the session's tty (`tty_of`) and look for the tmux pane owning it:
-   `tmux list-panes -a -F '#{pane_tty} #{session_name}:#{window_index}.#{pane_index}'`.
-2. No match (or tmux not installed): return `NotFound` as today.
-3. Match: `tmux select-window -t <target>` then `tmux select-pane -t <target>`.
-4. Find the terminal displaying that tmux session:
-   `tmux list-clients -F '#{client_tty} #{client_pid} #{session_name}'`, then run the usual host app
-   lookup from that client's pid, and activate it (and its tab, through the `TabSelector`s).
-5. Return `FocusOutcome::Tab` when everything worked, `App` if only the terminal was activated.
+- [ ] Cerebro looks for the tmux pane owning the session's tty:
+  `tmux list-panes -a -F '#{pane_tty} #{session_name}:#{window_index}.#{pane_index}'`.
+- [ ] No match (or tmux not installed): nothing happens, reported as "not found", as today.
+- [ ] Match: `tmux select-window -t <target>` then `tmux select-pane -t <target>`.
+- [ ] Cerebro finds the terminal displaying that tmux session:
+  `tmux list-clients -F '#{client_tty} #{client_pid} #{session_name}'`, runs the usual terminal app
+  lookup from that client's pid, and activates it (and its tab, like any other session).
+- [ ] The outcome is "tab" when everything worked, "app" if only the terminal was activated.
+- [ ] Sessions outside tmux behave as before.
 
-**Done when**: tests cover "no tmux", "no matching pane", "pane found but no client attached" and
-the full path, and clicking a tmux session in the app shows the right pane.
+**Constraints**
+
+- Every tmux call goes through the command runner, so it can be faked.
+- The domain doesn't change: the outcomes it knows are enough.
+
+**Done when**
+
+- [ ] clicking a tmux session in the app shows the right pane;
+- [ ] `npm run test:rust`, `npm run lint:rust` and `cargo fmt --all` are clean;
+- [ ] optional: tests cover "no tmux", "no matching pane", "pane found but no client attached" and
+  the full path.
+
+<details><summary>Hint 1: the zone</summary>
+
+Where does a click on a card end up on macOS? In the macOS focus strategy of the data layer,
+`cerebro-data`: the same place as exercise 6.
+</details>
+
+<details><summary>Hint 2: files and types</summary>
+
+- A new `crates/cerebro-data/src/strategies/focus/tmux.rs` (declare it in `focus/mod.rs`).
+- `MacFocuser::focus` (`focus/mod.rs`): when `find_host_app` finds nothing, it returns
+  `FocusOutcome::NotFound` today. Inside tmux, Claude's parent process is the tmux server, not a
+  terminal app, so no `.app` is found above it.
+- Already there: `tty_of` and `find_host_app` (`process_tree.rs`), `HostApp`, the `TabSelector`s
+  and `MacFocuser::activate`. `FocusOutcome::{Tab, App, NotFound}` lives in the domain ports.
+- The existing test `unknown_host_is_not_found` uses a tmux host: it must still pass.
+</details>
+
+<details><summary>Hint 3: the trap</summary>
+
+- `ScriptedRunner` matches commands by prefix and answers success with an empty output to anything
+  it doesn't know: an unexpected tmux command looks like "tmux is there, no pane". A missing tmux
+  is a runner `Err`, which `ScriptedRunner` can't produce: that test needs its own fake.
+- `CommandRunner::run` doesn't go through a shell: the single quotes of the commands above are shell
+  quoting. Pass `-F` and the format as two arguments, without quotes.
+- Session names may contain spaces: split each line a limited number of times, from the left.
+- "Pane found but no client attached": the pane is selected, but no terminal comes forward. The
+  rules above don't name that outcome: pick an honest one and explain it in a comment.
+</details>
+
+<details><summary>Hint 4: the Rust tools</summary>
+
+- `str::lines`, `split_once`, `splitn(3, ' ')`.
+- `Iterator::find_map` to go from lines to the first match.
+- A helper returning `Option` lets `?` handle every "no match"; `let … else` in the caller.
+</details>
 
 ### Exercise 12 (no Rust): draw a room
 
 **Branch**: `features/ex12_new_room`.<br>
-**Goal**: add a new room to the Institute without writing code.<br>
-**Where**: `assets/rooms/` (the PNG) and `assets/rooms/rooms.json`.<br>
 **Test**: `cargo test -p cerebro-data shipped_manifests_are_valid`, then run the app.
 
-**What to build.**
+**The need.** "The Institute could use a new room. Drawing it and declaring it should be enough,
+without writing code."
 
-1. Draw the room in Aseprite or Piskel. One frame is **192×120 px**; characters are 24×24 with
-   their feet at the bottom. For an animation, put the frames side by side in a single horizontal
-   strip: 16 frames make a 3072×120 PNG, like `lake.png`. You can also add a function to
-   `scripts/art/rooms.py`, which draws every shipped room.
-2. Save it as `assets/rooms/<id>.png` and add an entry to `rooms.json`:
+**Acceptance criteria**
 
-   | Field | Meaning |
-   |---|---|
-   | `id` | unique, kebab-case, same as the file name |
-   | `name` | shown in the UI |
-   | `sprite` | `rooms/<id>.png` |
-   | `frames` | number of frames in the strip (1 if static) |
-   | `fps` | animation speed (8 like the others) |
-   | `walkArea` | the rectangle, in pixels inside one frame, where characters may walk: `x`, `y`, `width`, `height` |
+- [ ] The room is drawn (Aseprite or Piskel) at the shared size: one frame is **192×120 px**;
+  characters are 24×24 with their feet at the bottom.
+- [ ] An animated room puts its frames side by side in a single horizontal strip: 16 frames make a
+  3072×120 PNG, like `lake.png`.
+- [ ] It is saved as `assets/rooms/<id>.png` and declared in `assets/rooms/rooms.json`:
 
-3. Run the app until your room shows up (open sessions until it's picked, or ban the other rooms
-   if exercise 9 is done).
+  | Field | Meaning |
+  |---|---|
+  | `id` | unique, kebab-case, same as the file name |
+  | `name` | shown in the UI |
+  | `sprite` | `rooms/<id>.png` |
+  | `frames` | number of frames in the strip (1 if static) |
+  | `fps` | animation speed (8 like the others) |
+  | `walkArea` | the rectangle, in pixels inside one frame, where characters may walk: `x`, `y`, `width`, `height` |
 
-**Done when**: the room appears, animated if it should be, and characters stay inside the floor.
+- [ ] The room appears in the app, animated if it should be, and characters stay inside the floor.
+
+**Constraints**
+
+- No code change: art lives in files (`docs/ARCHITECTURE.md`, *Assets*).
+- The shipped rooms keep working.
+
+**Done when**
+
+- [ ] `cargo test -p cerebro-data shipped_manifests_are_valid` passes, and so does `npm run test:rust`;
+- [ ] you ran the app until your room showed up (open sessions until it's picked, or ban the other
+  rooms if exercise 9 is done);
+- [ ] the room appears, animated if it should be, and characters stay inside the floor.
 
 **Then think about it.** `shipped_manifests_are_valid` only checks that the JSON parses and that
 there are at least 20 rooms. A `walkArea` outside the frame, a missing PNG or a wrong frame count
 would pass. Bonus: strengthen the test so it catches them.
+
+<details><summary>Hint 1: the zone</summary>
+
+Where does the art live? Not in code: in `assets/`, shared by the Rust backend and the UI.
+</details>
+
+<details><summary>Hint 2: files and types</summary>
+
+- `assets/rooms/<id>.png` and `assets/rooms/rooms.json` (`frameWidth`, `frameHeight`, `rooms`).
+- The backend compiles `rooms.json` into the binary: `EmbeddedCatalog`
+  (`crates/cerebro-data/src/repositories/embedded_catalog.rs`), whose test is
+  `shipped_manifests_are_valid`. The UI loads it with the sprites in `ui/src/lib/assets/catalog.ts`.
+- `scripts/art/rooms.py` draws every shipped room: you can add a function there, registered with
+  `@room(…)`.
+</details>
+
+<details><summary>Hint 3: the trap</summary>
+
+- `walkArea` is measured inside **one frame**, not inside the whole strip.
+- `frames` must match the strip: its width divided by 192.
+- `sprite` is relative to `assets/`: `rooms/<id>.png`, not `assets/rooms/<id>.png`.
+- Running `scripts/art/rooms.py` without arguments rewrites the whole `rooms.json` from the rooms
+  the script knows (in its `ORDER` list): an entry added only by hand is lost.
+- Rooms are picked pseudo-randomly from the session id: yours may not show up on the first try.
+</details>
+
+<details><summary>Hint 4: the tools</summary>
+
+- `file assets/rooms/lake.png` prints the size of a PNG.
+- For the bonus test: a PNG stores its width and height as two big-endian `u32` at bytes 16 to 24
+  (`u32::from_be_bytes`); `Path::exists` checks the sprite is there.
+</details>
 
 ## Level 4: Async
 
 ### Exercise 13: `cerebro serve`, the phone page without the tray app
 
 **Branch**: `features/ex13_cerebro_serve`.<br>
-**Goal**: `cerebro serve` serves the phone page from a terminal: on a Linux box without a desktop, over SSH, or to test the page without the app.<br>
 **Concepts**: `async`/`await`, the Tokio runtime, `spawn_blocking`, `tokio::select!`, intervals, graceful shutdown.<br>
 **Read**: the [Tokio tutorial](https://tokio.rs/tokio/tutorial) (*Hello Tokio*, *Spawning*, *Channels*, *Select*, *Graceful shutdown* in *Topics*); the [Async Book](https://rust-lang.github.io/async-book/), chapters 1 and 2.<br>
-**Where**: `crates/cerebro-cli/src/main.rs` (and a new `serve.rs`), `crates/cerebro-cli/src/injector.rs`, `crates/cerebro-cli/Cargo.toml`.<br>
 **Test**: none prepared; see **Done when**.
 
-**Why.** The tray app serves phones on its own (`src-tauri/src/mobile.rs`). The server itself
-lives in `crates/cerebro-web` and knows nothing about Tauri: any program can host it. Hosting it
-from the CLI is the smallest real async program you can write in this codebase: a timer, a
-blocking call to keep off the async threads, a server running beside it, and Ctrl-C to stop it
-all cleanly.
+**The need.** "I'd like the phone page without the tray app: on a Linux box without a desktop, over
+SSH, or just to test the page without launching the app. `cerebro serve` exists, but it only says
+it's not implemented yet."
 
-**What to build.**
+**Acceptance criteria**
 
-1. `cerebro serve [--local] [--dist <dir>]`. `--dist` defaults to `dist` (built by
-   `npm run build:ui`). If `<dir>/index.html` is missing, print
-   `no UI in <dir>: run npm run build:ui first` and exit with code 1.
-2. Addresses:
-   - with `--local`, serve on `127.0.0.1` only, to test with a browser on the same machine;
-   - otherwise, ask the private network (`ManageNetwork`: add it to the CLI injector like
-     `src-tauri/src/injector.rs` does). `Online` with addresses: serve on each of them. Anything
-     else: print why (`ZeroTier is stopped`, `ZeroTier is offline`, `no private ZeroTier network
-     joined`…) and exit with code 1.
-   - the port is always `cerebro_web::DEFAULT_PORT`.
-3. Use the app's key, so links keep working: `AccessKey::load_or_create` on
-   `Paths::mobile_key_file()`. Print one line per link, e.g.
-   `http://10.147.17.42:4243/?key=…`.
-4. Every second, observe the sessions and publish the result (`Publisher::publish` with a
-   `SnapshotDto`), but only when its content changed (`Snapshot::same_content`).
-   `ObserveSessions::execute` blocks (files, `ps`): it must not run on an async worker thread.
-5. Ctrl-C stops the server, prints `stopped` and exits with code 0, within a second, even with a
-   phone page open.
-6. The tray app already listens on port 4243. If the port is taken, print
-   `port 4243 is already in use: is the Cerebro app running?` and exit with code 1.
+- [ ] The command is `cerebro serve [--local] [--dist <dir>]`. `--dist` defaults to `dist` (built
+  by `npm run build:ui`). If `<dir>/index.html` is missing, it prints
+  `no UI in <dir>: run npm run build:ui first` and exits with code 1.
+- [ ] Addresses:
+  - with `--local`, it serves on `127.0.0.1` only, to test with a browser on the same machine;
+  - otherwise, it asks the private network. Online with addresses: it serves on each of them.
+    Anything else: it prints why (`ZeroTier is stopped`, `ZeroTier is offline`, `no private
+    ZeroTier network joined`…) and exits with code 1;
+  - the port is always the app's phone port, 4243.
+- [ ] Links keep working: it uses the app's key (`~/.cerebro/mobile-key`, created if missing) and
+  prints one line per link, e.g. `http://10.147.17.42:4243/?key=…`.
+- [ ] Every second, it observes the sessions and updates the page, but only when the content
+  changed: starting a Claude session adds its card within 2 s.
+- [ ] The API still wants the key: `curl -i http://127.0.0.1:4243/api/snapshot` (no key) answers `401`.
+- [ ] Ctrl-C stops the server, prints `stopped` and exits with code 0, within a second, even with a
+  phone page open.
+- [ ] The tray app already listens on port 4243. If the port is taken, it prints
+  `port 4243 is already in use: is the Cerebro app running?` and exits with code 1.
+
+**Constraints**
+
+- Observing sessions blocks (files, `ps`): it must not run on an async worker thread.
+- Only `serve` is async: `list`, `stats` and `hooks` don't change.
+- The CLI reuses the existing phone server as is, without any Tauri (`docs/ARCHITECTURE.md`).
 
 **Done when**
 
@@ -766,9 +1107,49 @@ all cleanly.
 - [ ] Ctrl-C stops it within a second, with the page still open;
 - [ ] with the Cerebro app running, it prints the port message instead of crashing;
 - [ ] without `--local`, it serves on your ZeroTier address and your phone shows the page;
-- [ ] Clippy is silent.
+- [ ] `npm run test:rust`, `npm run lint:rust` and `cargo fmt --all` are clean.
 
-<details><summary>Hints</summary>
+<details><summary>Hint 1: the zone</summary>
+
+Who can host the phone page? The tray app does it today (`src-tauri/src/mobile.rs`), but the server
+itself lives in `crates/cerebro-web` and knows nothing about Tauri: any program can host it. Here
+the host is the CLI, `cerebro-cli`. It's the smallest real async program you can write in this
+codebase: a timer, a blocking call to keep off the async threads, a server running beside it, and
+Ctrl-C to stop it all cleanly.
+</details>
+
+<details><summary>Hint 2: files and types</summary>
+
+- `crates/cerebro-cli/src/main.rs`: the `"serve"` arm, and the argument reading, which only looks at
+  the first argument today. A new `serve.rs` for the command itself.
+- `crates/cerebro-cli/src/injector.rs`: add `ManageNetwork` to `Container`, built like
+  `src-tauri/src/injector.rs` does (`ZeroTierNetwork::new(runner)`), and the key file,
+  `Paths::mobile_key_file()`.
+- `crates/cerebro-cli/Cargo.toml`: add `cerebro-web` and `tokio`.
+- From `cerebro_web`: `WebServer::start(addresses, publisher, assets, key)` (async),
+  `Publisher::new` and `Publisher::publish`, `DirAssets::new(dir)`, `AccessKey::load_or_create`,
+  `AccessKey::as_str`, `DEFAULT_PORT`, and `cerebro_web::dto::SnapshotDto` (`From<&Snapshot>`).
+- From the domain: `ManageNetwork::status()` returns a `NetworkStatus` (`NotInstalled`, `Stopped`,
+  `Offline`, `Online(Vec<IpAddr>)`) and `ManageNetwork::name()` gives `ZeroTier`;
+  `ObserveSessions::execute`; `Snapshot::same_content`.
+- `MobileDto::new` in `src-tauri/src/dto.rs` builds the same links: `http://{address}/?key=…`.
+</details>
+
+<details><summary>Hint 3: the trap</summary>
+
+- `tokio::task::spawn_blocking` needs a `'static` closure: share the container in an `Arc` and
+  clone the `Arc` into it.
+- `tokio::signal::ctrl_c()` only sees a Ctrl-C pressed after it is first polled. Call it inside
+  the loop and a Ctrl-C pressed while the sessions are being observed is lost: create it once,
+  before the loop, and pin it.
+- Publish the first snapshot too: there is nothing to compare it with yet, and until then
+  `/api/snapshot` answers `204`.
+- `WebServer::start` puts the address in front of the error message: test the error's kind, not
+  its text.
+- `Online` with no address is the "no private network joined" case.
+</details>
+
+<details><summary>Hint 4: the Rust tools</summary>
 
 - Only `serve` needs async. Rather than `#[tokio::main]` on `main`, build a runtime for it:
   `tokio::runtime::Runtime::new()?.block_on(serve(...))`. Tokio features: `rt-multi-thread`,
@@ -776,9 +1157,9 @@ all cleanly.
 - `WebServer::start` returns an `io::Error`: its `kind()` is `io::ErrorKind::AddrInUse` when the
   port is taken.
 - The loop: `let mut tick = tokio::time::interval(Duration::from_secs(1));` then
-  `loop { tokio::select! { _ = tick.tick() => { … } _ = tokio::signal::ctrl_c() => break } }`.
-- `tokio::task::spawn_blocking` needs a `'static` closure: share the container in an `Arc` and
-  clone the `Arc` into it.
+  `loop { tokio::select! { _ = tick.tick() => { … } _ = tokio::signal::ctrl_c() => break } }`
+  (with the Ctrl-C future created before the loop, see hint 3: `tokio::pin!`, then `&mut` it in
+  the `select!`).
 - Dropping the `WebServer` stops it too: look at its `Drop` impl and at
   `streams_each_snapshot_then_ends_when_stopped` in `crates/cerebro-web/src/server.rs`.
 </details>
