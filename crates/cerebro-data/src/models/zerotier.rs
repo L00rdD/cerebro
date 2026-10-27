@@ -19,7 +19,7 @@ pub struct ZeroTierNetworkEntry {
     /// `PRIVATE` (members approved by an admin) or `PUBLIC` (anyone can join).
     #[serde(rename = "type", default)]
     pub kind: String,
-    /// CIDR notation, e.g. `172.28.115.163/16`.
+    /// CIDR notation, e.g. `10.147.17.42/16`.
     #[serde(default)]
     pub assigned_addresses: Vec<String>,
 }
@@ -56,7 +56,7 @@ mod tests {
         let joined = entry(
             "OK",
             "PRIVATE",
-            &["172.28.115.163/16", "fd00::1/88", "garbage"],
+            &["10.147.17.42/16", "fd00::1/88", "garbage"],
         );
 
         // Act
@@ -66,7 +66,7 @@ mod tests {
         assert_eq!(
             addresses,
             [
-                "172.28.115.163".parse::<IpAddr>().unwrap(),
+                "10.147.17.42".parse::<IpAddr>().unwrap(),
                 "fd00::1".parse().unwrap()
             ]
         );
@@ -76,7 +76,7 @@ mod tests {
     fn ignores_public_and_unauthorized_networks() {
         // Act & Assert
         assert_eq!(
-            entry("OK", "PUBLIC", &["192.168.191.241/24"]).private_addresses(),
+            entry("OK", "PUBLIC", &["192.168.195.10/24"]).private_addresses(),
             Vec::<IpAddr>::new()
         );
         assert_eq!(

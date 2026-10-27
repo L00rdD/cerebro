@@ -190,8 +190,8 @@ mod tests {
     }
 
     const NETWORKS: &str = r#"[
-        {"status": "OK", "type": "PRIVATE", "assignedAddresses": ["172.28.115.163/16"], "name": "home"},
-        {"status": "OK", "type": "PUBLIC", "assignedAddresses": ["192.168.191.241/24"], "name": "open"}
+        {"status": "OK", "type": "PRIVATE", "assignedAddresses": ["10.147.17.42/16"], "name": "home"},
+        {"status": "OK", "type": "PUBLIC", "assignedAddresses": ["192.168.195.10/24"], "name": "open"}
     ]"#;
 
     fn status(runner: Arc<ScriptedRunner>) -> Result<NetworkStatus, DomainError> {
@@ -205,7 +205,7 @@ mod tests {
             (
                 "zt -j info",
                 true,
-                r#"{"online": true, "address": "a5d5c7f244"}"#,
+                r#"{"online": true, "address": "0123456789"}"#,
             ),
             ("zt -j listnetworks", true, NETWORKS),
         ]);
@@ -216,9 +216,7 @@ mod tests {
         // Assert
         assert_eq!(
             result,
-            Ok(NetworkStatus::Online(vec![
-                "172.28.115.163".parse().unwrap()
-            ]))
+            Ok(NetworkStatus::Online(vec!["10.147.17.42".parse().unwrap()]))
         );
     }
 

@@ -748,7 +748,7 @@ all cleanly.
    - the port is always `cerebro_web::DEFAULT_PORT`.
 3. Use the app's key, so links keep working: `AccessKey::load_or_create` on
    `Paths::mobile_key_file()`. Print one line per link, e.g.
-   `http://172.28.115.163:4243/?key=…`.
+   `http://10.147.17.42:4243/?key=…`.
 4. Every second, observe the sessions and publish the result (`Publisher::publish` with a
    `SnapshotDto`), but only when its content changed (`Snapshot::same_content`).
    `ObserveSessions::execute` blocks (files, `ps`): it must not run on an async worker thread.
