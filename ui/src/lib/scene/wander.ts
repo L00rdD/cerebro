@@ -3,10 +3,15 @@
 
 import type { Rect } from "../assets/catalog";
 
-export type Facing = "front" | "back";
+export type Facing = "front" | "back" | "side";
 
 /** How a character gets from one waypoint to the next. */
 export type Movement = "walk" | "fly" | "teleport" | "phase" | "dash";
+
+export type Frame = 0 | 1 | 2 | 3;
+
+/** Walk cycle: step, pass, other step, pass. */
+const WALK_CYCLE: Frame[] = [1, 2, 3, 2];
 
 export interface Point {
   x: number;
@@ -17,10 +22,10 @@ export interface Pose {
   x: number;
   y: number;
   facing: Facing;
-  /** Mirror the sprite (walking left, or facing left after walking left). */
+  /** Facing left: the side sprite is mirrored, and directional powers aim left. */
   flip: boolean;
-  /** 0 = standing, 1 and 2 = walking steps. */
-  frame: 0 | 1 | 2;
+  /** 0 = standing, 1 and 3 = steps, 2 = passing between them. */
+  frame: Frame;
   /** Height above the ground in pixels: flyers hover while their shadow stays on the floor. */
   lift: number;
   /** Sprite opacity: phasing and teleporting characters fade out. */
@@ -71,7 +76,7 @@ const CAST_CHANCE = 0.75;
 
 /** Hovering height of flyers, with a slow bob. */
 function hover(seed: number, seconds: number): number {
-  return 4 + Math.round(Math.sin(seconds * 3 + (seed % 7)));
+  return 8 + Math.round(Math.sin(seconds * 3 + (seed % 7)) * 2);
 }
 
 export function poseAt(actorId: string, area: Rect, seconds: number, walking: boolean, movement: Movement = "walk"): Pose {
@@ -120,14 +125,16 @@ export function poseAt(actorId: string, area: Rect, seconds: number, walking: bo
     return { x: Math.floor(at.x), y: Math.floor(at.y), facing: "front", flip: dx < 0, frame: 0, lift: 0, alpha, travel };
   }
 
-  const stepsPerSecond = movement === "dash" ? 12 : 6;
+  const stepsPerSecond = movement === "dash" ? 16 : 8;
+  // The floor is seen at an angle: vertical moves count double when picking a facing.
+  const vertical = Math.abs(dy) * 2 > Math.abs(dx);
   return {
     x: Math.floor(from.x + dx * u),
     y: Math.floor(from.y + dy * u),
-    facing: dy < 0 && Math.abs(dy) > Math.abs(dx) ? "back" : "front",
+    facing: vertical ? (dy < 0 ? "back" : "front") : "side",
     flip: dx < 0,
-    frame: flying ? 0 : ((1 + (Math.floor(seconds * stepsPerSecond) % 2)) as 1 | 2),
-    lift: flying ? hover(seed, seconds) + 2 : 0,
+    frame: flying ? 0 : WALK_CYCLE[Math.floor(seconds * stepsPerSecond) % WALK_CYCLE.length]!,
+    lift: flying ? hover(seed, seconds) + 3 : 0,
     alpha: movement === "phase" ? 0.45 : 1,
     travel,
   };

@@ -8,7 +8,7 @@
     catalog,
     room,
     actors,
-    scale = 2,
+    scale = 1,
     fill = false,
   }: {
     catalog: Catalog;

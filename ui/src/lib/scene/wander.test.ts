@@ -71,6 +71,27 @@ describe("wander", () => {
     }
   });
 
+  it("faces the way it walks", () => {
+    // Arrange
+    const seen = new Set<string>();
+
+    // Act & Assert
+    for (let t = 0; t < 200; t += 0.13) {
+      const pose = poseAt("agent:h", area, t, true);
+      if (!pose.travel) continue;
+      const { from, to } = pose.travel;
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      const expected = Math.abs(dy) * 2 > Math.abs(dx) ? (dy < 0 ? "back" : "front") : "side";
+      expect(pose.facing).toBe(expected);
+      expect(pose.flip).toBe(dx < 0);
+      seen.add(pose.facing);
+    }
+
+    // Assert
+    expect(seen.size).toBeGreaterThan(1);
+  });
+
   it("spreads unit values over [0, 1)", () => {
     // Act
     const values = Array.from({ length: 1000 }, (_, i) => unit(42, i));

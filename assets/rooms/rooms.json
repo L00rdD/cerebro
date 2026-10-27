@@ -1,44 +1,44 @@
 {
-  "frameHeight": 60,
-  "frameWidth": 96,
+  "frameHeight": 120,
+  "frameWidth": 192,
   "rooms": [
     {
       "fps": 8,
-      "frames": 1,
+      "frames": 16,
       "id": "office",
       "name": "Professor's Study",
       "sprite": "rooms/office.png",
       "walkArea": {
-        "height": 30,
-        "width": 76,
-        "x": 10,
-        "y": 26
+        "height": 48,
+        "width": 156,
+        "x": 18,
+        "y": 66
       }
     },
     {
       "fps": 8,
-      "frames": 32,
+      "frames": 16,
       "id": "danger-room",
       "name": "Danger Room",
       "sprite": "rooms/danger-room.png",
       "walkArea": {
-        "height": 34,
-        "width": 76,
-        "x": 10,
-        "y": 22
+        "height": 50,
+        "width": 164,
+        "x": 14,
+        "y": 64
       }
     },
     {
       "fps": 8,
-      "frames": 32,
+      "frames": 16,
       "id": "hangar",
       "name": "Blackbird Hangar",
       "sprite": "rooms/hangar.png",
       "walkArea": {
-        "height": 20,
-        "width": 80,
-        "x": 8,
-        "y": 36
+        "height": 34,
+        "width": 172,
+        "x": 10,
+        "y": 82
       }
     },
     {
@@ -48,23 +48,23 @@
       "name": "Garage",
       "sprite": "rooms/garage.png",
       "walkArea": {
-        "height": 34,
-        "width": 52,
-        "x": 34,
-        "y": 22
+        "height": 48,
+        "width": 108,
+        "x": 74,
+        "y": 66
       }
     },
     {
       "fps": 8,
-      "frames": 32,
+      "frames": 16,
       "id": "courtyard",
       "name": "Courtyard",
       "sprite": "rooms/courtyard.png",
       "walkArea": {
-        "height": 36,
-        "width": 58,
-        "x": 30,
-        "y": 20
+        "height": 54,
+        "width": 110,
+        "x": 72,
+        "y": 60
       }
     },
     {
@@ -74,23 +74,23 @@
       "name": "Basketball Court",
       "sprite": "rooms/basketball.png",
       "walkArea": {
-        "height": 44,
-        "width": 84,
-        "x": 6,
-        "y": 12
+        "height": 64,
+        "width": 136,
+        "x": 28,
+        "y": 48
       }
     },
     {
       "fps": 8,
-      "frames": 32,
+      "frames": 16,
       "id": "classroom",
       "name": "Classroom",
       "sprite": "rooms/classroom.png",
       "walkArea": {
-        "height": 36,
-        "width": 36,
-        "x": 8,
-        "y": 20
+        "height": 52,
+        "width": 86,
+        "x": 10,
+        "y": 62
       }
     },
     {
@@ -100,114 +100,114 @@
       "name": "Library",
       "sprite": "rooms/library.png",
       "walkArea": {
-        "height": 30,
-        "width": 72,
+        "height": 48,
+        "width": 168,
         "x": 12,
-        "y": 26
+        "y": 66
       }
     },
     {
       "fps": 8,
-      "frames": 32,
+      "frames": 16,
       "id": "kitchen",
       "name": "Kitchen",
       "sprite": "rooms/kitchen.png",
       "walkArea": {
-        "height": 36,
-        "width": 46,
-        "x": 8,
-        "y": 20
+        "height": 50,
+        "width": 106,
+        "x": 10,
+        "y": 64
       }
     },
     {
       "fps": 8,
-      "frames": 32,
+      "frames": 16,
       "id": "beast-lab",
       "name": "Beast's Lab",
       "sprite": "rooms/beast-lab.png",
       "walkArea": {
-        "height": 34,
-        "width": 76,
-        "x": 10,
-        "y": 22
+        "height": 48,
+        "width": 168,
+        "x": 12,
+        "y": 66
       }
     },
     {
       "fps": 8,
-      "frames": 32,
+      "frames": 16,
       "id": "infirmary",
       "name": "Infirmary",
       "sprite": "rooms/infirmary.png",
       "walkArea": {
-        "height": 24,
-        "width": 80,
-        "x": 8,
-        "y": 32
+        "height": 40,
+        "width": 172,
+        "x": 10,
+        "y": 76
       }
     },
     {
       "fps": 8,
-      "frames": 32,
+      "frames": 16,
       "id": "cerebro",
       "name": "Cerebro",
       "sprite": "rooms/cerebro.png",
       "walkArea": {
         "height": 34,
-        "width": 16,
-        "x": 40,
-        "y": 22
+        "width": 76,
+        "x": 58,
+        "y": 66
       }
     },
     {
       "fps": 8,
-      "frames": 32,
+      "frames": 16,
       "id": "pool",
       "name": "Pool",
       "sprite": "rooms/pool.png",
       "walkArea": {
-        "height": 10,
-        "width": 80,
-        "x": 8,
-        "y": 46
+        "height": 28,
+        "width": 172,
+        "x": 10,
+        "y": 88
       }
     },
     {
       "fps": 8,
-      "frames": 32,
+      "frames": 16,
       "id": "greenhouse",
       "name": "Storm's Greenhouse",
       "sprite": "rooms/greenhouse.png",
       "walkArea": {
-        "height": 36,
-        "width": 80,
-        "x": 8,
-        "y": 20
+        "height": 48,
+        "width": 168,
+        "x": 12,
+        "y": 66
       }
     },
     {
       "fps": 8,
-      "frames": 32,
+      "frames": 16,
       "id": "gym",
       "name": "Gym",
       "sprite": "rooms/gym.png",
       "walkArea": {
-        "height": 36,
-        "width": 56,
-        "x": 30,
-        "y": 20
+        "height": 50,
+        "width": 114,
+        "x": 68,
+        "y": 64
       }
     },
     {
       "fps": 8,
-      "frames": 32,
+      "frames": 16,
       "id": "lounge",
       "name": "Lounge",
       "sprite": "rooms/lounge.png",
       "walkArea": {
-        "height": 22,
-        "width": 80,
-        "x": 8,
-        "y": 34
+        "height": 44,
+        "width": 172,
+        "x": 10,
+        "y": 70
       }
     },
     {
@@ -217,23 +217,23 @@
       "name": "Dormitory",
       "sprite": "rooms/dorm.png",
       "walkArea": {
-        "height": 26,
-        "width": 80,
-        "x": 8,
-        "y": 30
+        "height": 42,
+        "width": 168,
+        "x": 12,
+        "y": 72
       }
     },
     {
       "fps": 8,
-      "frames": 32,
+      "frames": 16,
       "id": "rec-room",
       "name": "Rec Room",
       "sprite": "rooms/rec-room.png",
       "walkArea": {
-        "height": 22,
-        "width": 80,
-        "x": 8,
-        "y": 34
+        "height": 42,
+        "width": 172,
+        "x": 10,
+        "y": 72
       }
     },
     {
@@ -243,49 +243,49 @@
       "name": "Dining Hall",
       "sprite": "rooms/refectory.png",
       "walkArea": {
-        "height": 36,
-        "width": 80,
-        "x": 8,
-        "y": 20
+        "height": 42,
+        "width": 172,
+        "x": 10,
+        "y": 72
       }
     },
     {
       "fps": 8,
-      "frames": 32,
+      "frames": 16,
       "id": "war-room",
       "name": "War Room",
       "sprite": "rooms/war-room.png",
       "walkArea": {
-        "height": 32,
-        "width": 76,
+        "height": 48,
+        "width": 172,
         "x": 10,
-        "y": 24
+        "y": 66
       }
     },
     {
       "fps": 8,
-      "frames": 32,
+      "frames": 16,
       "id": "lake",
       "name": "Breakstone Lake",
       "sprite": "rooms/lake.png",
       "walkArea": {
-        "height": 18,
-        "width": 84,
-        "x": 6,
-        "y": 10
+        "height": 34,
+        "width": 176,
+        "x": 8,
+        "y": 80
       }
     },
     {
       "fps": 8,
-      "frames": 32,
+      "frames": 16,
       "id": "rooftop",
       "name": "Rooftop Helipad",
       "sprite": "rooms/rooftop.png",
       "walkArea": {
-        "height": 38,
-        "width": 76,
-        "x": 10,
-        "y": 18
+        "height": 60,
+        "width": 164,
+        "x": 14,
+        "y": 54
       }
     }
   ]

@@ -28,7 +28,7 @@ export interface RoomAsset {
 }
 
 export interface Catalog {
-  characterSize: number;
+  characterSize: { width: number; height: number };
   roomSize: { width: number; height: number };
   characters: Map<string, CharacterAsset>;
   rooms: Map<string, RoomAsset>;
@@ -36,7 +36,8 @@ export interface Catalog {
 }
 
 interface CharactersFile {
-  frameSize: number;
+  frameWidth: number;
+  frameHeight: number;
   characters: {
     id: string;
     name: string;
@@ -91,7 +92,7 @@ export function loadCatalog(): Promise<Catalog> {
       rooms.rooms.map(async (r) => ({ ...r, image: await image(r.sprite) })),
     );
     return {
-      characterSize: characters.frameSize,
+      characterSize: { width: characters.frameWidth, height: characters.frameHeight },
       roomSize: { width: rooms.frameWidth, height: rooms.frameHeight },
       characters: new Map(characterAssets.map((c) => [c.id, c])),
       rooms: new Map(roomAssets.map((r) => [r.id, r])),
