@@ -498,7 +498,7 @@ dependencies = [
 
 [[package]]
 name = "cerebro-app"
-version = "0.3.0"
+version = "0.5.0"
 dependencies = [
  "cerebro-data",
  "cerebro-domain",
@@ -517,7 +517,7 @@ dependencies = [
 
 [[package]]
 name = "cerebro-cli"
-version = "0.3.0"
+version = "0.5.0"
 dependencies = [
  "cerebro-data",
  "cerebro-domain",
@@ -526,7 +526,7 @@ dependencies = [
 
 [[package]]
 name = "cerebro-data"
-version = "0.3.0"
+version = "0.5.0"
 dependencies = [
  "cerebro-domain",
  "cerebro-protocol",
@@ -537,14 +537,14 @@ dependencies = [
 
 [[package]]
 name = "cerebro-domain"
-version = "0.3.0"
+version = "0.5.0"
 dependencies = [
  "thiserror 2.0.21",
 ]
 
 [[package]]
 name = "cerebro-hook"
-version = "0.3.0"
+version = "0.5.0"
 dependencies = [
  "cerebro-protocol",
  "serde_json",
@@ -553,7 +553,7 @@ dependencies = [
 
 [[package]]
 name = "cerebro-protocol"
-version = "0.3.0"
+version = "0.5.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -562,7 +562,7 @@ dependencies = [
 
 [[package]]
 name = "cerebro-web"
-version = "0.3.0"
+version = "0.5.0"
 dependencies = [
  "axum",
  "cerebro-domain",
