@@ -37,6 +37,7 @@ mod tests {
                 status: SessionStatus::Busy,
                 started_at: Timestamp(started),
                 status_since: Timestamp(started),
+                remote_url: None,
                 agents: agents
                     .iter()
                     .map(|(agent_id, kind, agent_started)| Agent {
@@ -65,16 +66,29 @@ mod tests {
     #[test]
     #[ignore = "exercise 5"]
     fn empty_snapshot_gives_empty_stats() {
-        assert_eq!(compute_stats(&snapshot(vec![])), Stats::default());
+        // Arrange
+        let empty = snapshot(vec![]);
+
+        // Act
+        let stats = compute_stats(&empty);
+
+        // Assert
+        assert_eq!(stats, Stats::default());
     }
 
     #[test]
     #[ignore = "exercise 5"]
     fn counts_and_records() {
-        let stats = compute_stats(&snapshot(vec![
+        // Arrange
+        let observed = snapshot(vec![
             scene("a", 1, &[("x", "Explore", 400)]),
             scene("b", 2, &[("y", "Explore", 100), ("z", "Plan", 900)]),
-        ]));
+        ]);
+
+        // Act
+        let stats = compute_stats(&observed);
+
+        // Assert
         assert_eq!(
             stats.agents_by_kind,
             BTreeMap::from([("Explore".into(), 2), ("Plan".into(), 1)])
@@ -86,10 +100,16 @@ mod tests {
     #[test]
     #[ignore = "exercise 5"]
     fn tie_goes_to_the_oldest_session() {
-        let stats = compute_stats(&snapshot(vec![
+        // Arrange
+        let observed = snapshot(vec![
             scene("new", 9, &[("x", "Plan", 1)]),
             scene("old", 1, &[("y", "Plan", 1)]),
-        ]));
+        ]);
+
+        // Act
+        let stats = compute_stats(&observed);
+
+        // Assert
         assert_eq!(stats.busiest_session, Some(SessionId::new("old")));
     }
 }

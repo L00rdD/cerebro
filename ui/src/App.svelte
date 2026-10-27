@@ -1,25 +1,28 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { backend } from "./lib/api/backend";
+  import { desktop } from "./lib/api/backend";
   import { app } from "./lib/state/app.svelte";
   import Header from "./components/Header.svelte";
   import Banners from "./components/Banners.svelte";
   import SessionCard from "./components/SessionCard.svelte";
   import EmptyState from "./components/EmptyState.svelte";
   import Footer from "./components/Footer.svelte";
+  import PhoneLink from "./components/PhoneLink.svelte";
 
   let panel: HTMLElement;
 
   onMount(() => {
     void app.start();
+    if (!desktop) return;
     // The native window follows the content height.
-    const observer = new ResizeObserver(() => void backend.resizePanel(Math.ceil(panel.getBoundingClientRect().height)));
+    const api = desktop;
+    const observer = new ResizeObserver(() => void api.resizePanel(Math.ceil(panel.getBoundingClientRect().height)));
     observer.observe(panel);
     return () => observer.disconnect();
   });
 </script>
 
-<main bind:this={panel}>
+<main bind:this={panel} class:phone={app.phone}>
   <Header />
   <Banners />
 
@@ -30,7 +33,7 @@
   {:else if app.snapshot.scenes.length === 0}
     <EmptyState catalog={app.catalog} />
   {:else}
-    <section class="grid" class:scroll={app.snapshot.scenes.length > 4}>
+    <section class="grid" class:scroll={!app.phone && app.snapshot.scenes.length > 4}>
       {#each app.snapshot.scenes as scene (scene.id)}
         <SessionCard {scene} catalog={app.catalog} now={app.now} />
       {/each}
@@ -38,12 +41,15 @@
   {/if}
 
   {#if app.toast}<div class="toast">{app.toast}</div>{/if}
-  <Footer />
+  {#if !app.phone}
+    <PhoneLink />
+    <Footer />
+  {/if}
 </main>
 
 <style>
   main {
-    width: 446px;
+    width: 452px;
     padding: 14px;
     display: flex;
     flex-direction: column;
@@ -54,13 +60,24 @@
   }
   .grid {
     display: grid;
-    grid-template-columns: repeat(2, 204px);
+    grid-template-columns: repeat(2, 206px);
     gap: 10px;
   }
   .scroll {
     max-height: 560px;
     overflow-y: auto;
   }
+  /* Phone: the whole screen, clear of the notch and the home indicator. */
+  main.phone {
+    width: 100%;
+    min-height: 100vh;
+    padding: calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right))
+      calc(14px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
+    border: none;
+    border-radius: 0;
+  }
+  /* minmax(0, …): long names shrink with an ellipsis instead of widening the page. */
+  .phone .grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
   .muted { color: var(--muted); text-align: center; margin: 24px 0; }
   .error { color: #ff6b6b; }
   .toast {

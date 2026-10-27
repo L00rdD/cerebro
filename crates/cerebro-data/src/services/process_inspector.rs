@@ -101,6 +101,7 @@ mod tests {
     use super::*;
     #[test]
     fn parses_lines() {
+        // Act & Assert
         assert_eq!(
             parse_ps_line("  52117 Thu Oct 15  8:43:57 2026"),
             Some((52117, "Thu Oct 15 8:43:57 2026".into()))
@@ -112,14 +113,21 @@ mod tests {
     #[test]
     #[ignore = "exercise 7"]
     fn borrowed_parse_points_into_the_input() {
+        // Arrange
         let line = String::from("  52117 Thu Oct 15  8:43:57 2026");
+
+        // Act
         let parsed = parse_ps_line_borrowed(&line).unwrap();
+
+        // Assert
         assert_eq!(parsed.pid, 52117);
         // Same memory as `line`: no copy was made.
         let inside = line.as_ptr() as usize..line.as_ptr() as usize + line.len();
         assert!(inside.contains(&(parsed.start.as_ptr() as usize)));
         assert!(parsed.started_at("Thu Oct 15 8:43:57 2026"));
         assert!(!parsed.started_at("Thu Oct 15 8:43:58 2026"));
+
+        // Act & Assert
         assert_eq!(parse_ps_line_borrowed("garbage"), None);
     }
 
@@ -146,9 +154,14 @@ mod tests {
 
         #[test]
         fn only_returns_alive_pids() {
+            // Arrange
             let inspector =
                 PsProcessInspector::new(Arc::new(FakeRunner("    1 Thu Oct 15 08:00:00 2026\n")));
+
+            // Act
             let alive = inspector.inspect(&[1, 2]);
+
+            // Assert
             assert_eq!(alive.len(), 1);
             assert_eq!(alive[&1].start.as_deref(), Some("Thu Oct 15 08:00:00 2026"));
         }

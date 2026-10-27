@@ -1,16 +1,45 @@
 <script lang="ts">
-  import { backend } from "../lib/api/backend";
+  import { desktop } from "../lib/api/backend";
   import type { SceneDto } from "../lib/api/types";
   import type { Catalog } from "../lib/assets/catalog";
   import { STATUS_LABELS, humanizeDuration, shortenHome } from "../lib/format";
   import type { ActorState, SceneActor } from "../lib/scene/renderer";
   import { app } from "../lib/state/app.svelte";
+  import { remoteHint } from "../lib/tools";
   import SceneCanvas from "./SceneCanvas.svelte";
 
   let { scene, catalog, now }: { scene: SceneDto; catalog: Catalog; now: number } = $props();
 
   let menuOpen = $state(false);
 
+  /** Hovering a scene shows it at twice the size, over the panel, after a short delay.
+   *  The zoom sits inside the card, so it shares the card's click and hover. */
+  const ZOOM = 2;
+  const ZOOM_DELAY_MS = 250;
+  let card: HTMLDivElement;
+  let zoomTop = $state<number | null>(null);
+  let zoomTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function startZoom() {
+    if (app.phone) return;
+    clearTimeout(zoomTimer);
+    zoomTimer = setTimeout(() => {
+      const rect = card.getBoundingClientRect();
+      const height = catalog.roomSize.height * ZOOM + 8;
+      // Centered on the card, but kept inside the window.
+      const top = rect.top + rect.height / 2 - height / 2;
+      zoomTop = Math.max(4, Math.min(window.innerHeight - height - 4, top));
+    }, ZOOM_DELAY_MS);
+  }
+
+  function stopZoom() {
+    clearTimeout(zoomTimer);
+    zoomTop = null;
+    menuOpen = false;
+  }
+
+  /** Clicking jumps to the terminal: desktop only, and only with a process to follow. */
+  let focusable = $derived(desktop !== null && scene.focusable);
   let room = $derived(catalog.rooms.get(scene.room) ?? [...catalog.rooms.values()][0]!);
   let leadState = $derived<ActorState>(scene.status === "busy" ? "walking" : scene.status === "idle" ? "asleep" : "alert");
   let actors = $derived<SceneActor[]>(
@@ -24,17 +53,24 @@
       scene.cwd,
       ...scene.actors.map((a, i) => `${names[i]}: ${a.agentKind ?? "main session"}`),
       scene.focusable ? "Click to jump to this session" : "No process id for this session: cannot jump to it",
+      ...(scene.remoteUrl ? ["Remote control is on: you can take over from your phone"] : []),
     ].join("\n"),
   );
 
   async function focus() {
-    if (!scene.focusable) return;
+    if (!desktop || !scene.focusable) return;
     try {
-      const outcome = await backend.focus(scene.id);
+      const outcome = await desktop.focus(scene.id);
       if (outcome.kind === "notFound") app.notify("Couldn't find the terminal hosting this session (tmux? ssh?).");
     } catch (e) {
       app.notify(`Couldn't focus the session: ${String(e)}`);
     }
+  }
+
+  function toggleMenu(event: MouseEvent) {
+    if (!desktop) return;
+    event.preventDefault();
+    menuOpen = !menuOpen;
   }
 
   async function copyPath() {
@@ -45,25 +81,43 @@
 
   async function openFolder() {
     menuOpen = false;
-    await backend.openFolder(scene.id).catch((e) => app.notify(String(e)));
+    await desktop?.openFolder(scene.id).catch((e) => app.notify(String(e)));
   }
 </script>
 
 <div
   class="card {scene.status}"
-  class:focusable={scene.focusable}
-  title={tooltip}
+  class:focusable
+  class:phone={app.phone}
+  title={app.phone ? undefined : tooltip}
   onclick={focus}
-  oncontextmenu={(e) => { e.preventDefault(); menuOpen = !menuOpen; }}
-  onmouseleave={() => (menuOpen = false)}
+  oncontextmenu={toggleMenu}
+  bind:this={card}
+  onmouseenter={startZoom}
+  onmouseleave={stopZoom}
   role="button"
   tabindex="0"
   onkeydown={(e) => e.key === "Enter" && focus()}
 >
   <div class="title"><i class="dot"></i><strong>{scene.name}</strong></div>
-  <SceneCanvas {catalog} {room} {actors} />
+  <SceneCanvas {catalog} {room} {actors} scale={app.phone ? 2 : 1} fill={app.phone} />
   <div class="cast"><span class="muted">{room.name} —</span> {names.join(" · ")}</div>
   <div class="meta"><span class="cwd">{shortenHome(scene.cwd)}</span><span>{statusLabel}</span></div>
+
+  {#if zoomTop !== null && !menuOpen}
+    <div class="zoom" style:top="{zoomTop}px">
+      <SceneCanvas {catalog} {room} {actors} scale={ZOOM} />
+    </div>
+  {/if}
+
+  {#if app.phone}
+    {#if scene.remoteUrl}
+      <!-- A real link, tapped by the user: iOS hands it to the tool's app when installed. -->
+      <a class="take-over" href={scene.remoteUrl} target="_blank" rel="noopener noreferrer">Take over ↗</a>
+    {:else}
+      <p class="hint">{remoteHint(scene.tool)}</p>
+    {/if}
+  {/if}
 
   {#if menuOpen}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -77,7 +131,7 @@
 <style>
   .card {
     position: relative;
-    width: 204px;
+    width: 206px;
     padding: 6px;
     display: flex;
     flex-direction: column;
@@ -114,4 +168,36 @@
     z-index: 2;
   }
   .menu button { text-align: left; border: none; font-size: 11px; }
+  .zoom {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 3px;
+    background: var(--card);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 8px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+    /* Part of the card: clicks on it focus this session, and hovering it keeps it open. */
+    z-index: 3;
+  }
+
+  /* Phone: one card per row, readable without zooming, a thumb-sized take-over button. */
+  .card.phone { width: auto; padding: 10px; gap: 8px; border-radius: 12px; }
+  .phone .title { font-size: 15px; }
+  .phone .dot { width: 10px; height: 10px; }
+  .phone .cast, .phone .meta { font-size: 12px; }
+  .take-over {
+    display: block;
+    padding: 12px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+  }
+  .waiting .take-over { background: color-mix(in srgb, var(--waiting) 25%, transparent); border-color: var(--waiting); }
+  .hint { margin: 0; font-size: 12px; color: var(--muted); }
 </style>

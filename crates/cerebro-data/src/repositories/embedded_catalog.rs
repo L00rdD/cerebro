@@ -36,7 +36,10 @@ mod tests {
 
     #[test]
     fn shipped_manifests_are_valid() {
+        // Act
         let catalog = EmbeddedCatalog.catalog().unwrap();
+
+        // Assert
         assert!(catalog.characters().len() >= 70);
         assert!(catalog.rooms().len() >= 20);
     }

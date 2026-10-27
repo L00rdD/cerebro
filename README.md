@@ -8,7 +8,7 @@ Cerebro has two goals:
    Claude Code session as a room of the X-Mansion, seen from above. Glance at it to see which sessions are working, which are
    asleep, and which are waiting for you, then click one to jump to its terminal tab.
 2. **A Rust course in a real codebase.** The app is written to be improved by someone learning
-   Rust. Twelve exercises, from a first function to cross-platform code, each one shipping a real
+   Rust. Thirteen exercises, from a first function to cross-platform and async code, each one shipping a real
    improvement to the app. No toy programs: when an exercise is done, Cerebro uses your code.
 
 ## The app
@@ -27,6 +27,35 @@ Cerebro has two goals:
   inspection, terminal focus) live in adapters behind traits.
 - Platform status: macOS is complete; Windows and Linux support is built in exercise 10.
 
+## On your phone
+
+The same view, live, on your phone: no App Store app, a page served by Cerebro and added to the
+home screen. Phones reach the Mac through **ZeroTier** (a private network you already run on both).
+
+- **Follow**: every session, its room and cast, its status (*needs you* included), live.
+- **Take over**: Cerebro doesn't type into terminals. A session started with Claude Code's
+  **Remote Control** (`claude --remote-control`, or `/remote-control` inside a session) shows a
+  **Take over** button that opens it in the Claude app or on claude.ai. Other sessions explain how
+  to turn it on.
+
+**Setup, once.**
+
+1. Join the Mac and the phone to the same **private** ZeroTier network. Cerebro serves only on
+   private networks (members approved by you), never on public ones, nor on your LAN.
+2. In the panel, the **Phone** line shows the address. **Copy link**: it ends with `?key=…`, the
+   secret that lets the page read your sessions (stored in `~/.cerebro/mobile-key`; delete that
+   file to revoke every link).
+3. On the phone, open the link in Safari, then **Share → Add to Home Screen**.
+
+**ZeroTier off on the phone?** The page itself comes through ZeroTier, so it can't check or start
+it, and no web page can start a VPN. Use a Shortcut as the home-screen icon instead of the
+bookmark: in **Shortcuts**, create *Set VPN* (pick ZeroTier, *Connect*), *Wait* 2 s, *Open URLs*
+(the phone link), then **Add to Home Screen**. If *Set VPN* doesn't list ZeroTier, use *Open App*
+ZeroTier instead.
+
+**ZeroTier off on the Mac?** The panel shows a banner with a **Start** button (it asks for your
+administrator password: the ZeroTier service is a system daemon).
+
 ## Learning Rust with Cerebro
 
 The learning path lives in **[EXERCISES.md](EXERCISES.md)**. The code ships with deliberate gaps:
@@ -43,6 +72,7 @@ Each exercise is to fill one gap:
 | 2. Idiomatic Rust | error handling, iterator statistics, Terminal.app support, borrowing | `Result` and `?`, iterators, trait objects, ownership and lifetimes |
 | 3. Systems | file watcher, config file, Windows and Linux, tmux (boss) | threads and channels, serde, conditional compilation |
 | Bonus | draw a room | pixel art, no Rust |
+| 4. Async | `cerebro serve`, the phone page from a terminal | `async`/`await`, Tokio, graceful shutdown |
 
 The architecture is part of the lesson: a pure domain crate, adapters behind traits, dependency
 injection at the edge. Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before the first exercise.
@@ -90,6 +120,7 @@ crates/cerebro-domain     entities, ports, use cases (pure Rust)
 crates/cerebro-data       adapters: files, processes, terminal focus, settings
 crates/cerebro-hook       the Claude Code hook binary
 crates/cerebro-cli        command line companion (built during the exercises)
+crates/cerebro-web        the phone page: HTTP server, live snapshot feed, shared DTOs
 src-tauri/                desktop shell: tray, panel, commands, DI
 ui/                       Svelte UI: cards and canvas scenes
 assets/                   sprites and manifests
@@ -100,7 +131,8 @@ EXERCISES.md              learn Rust by improving Cerebro
 ## Data and privacy
 
 Cerebro only reads local files (`~/.claude/sessions`, `~/.cerebro`) and runs local system tools
-to inspect processes and focus terminals (`ps`, `open` and `osascript` on macOS). Nothing leaves
-the machine.
+to inspect processes, focus terminals and query ZeroTier (`ps`, `open`, `osascript`,
+`zerotier-cli`). Nothing leaves the machine, except the phone page: served on your private
+ZeroTier networks only, and its data only to holders of the link's key.
 
 X-Men characters are Marvel properties; this is a personal fan project, not for distribution.

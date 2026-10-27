@@ -1,7 +1,7 @@
 # Learning Rust with Cerebro
 
-Twelve exercises that make Cerebro better while teaching Rust, from your first function to
-cross-platform code. Each one is a real improvement: when you finish, the app (or the CLI)
+Thirteen exercises that make Cerebro better while teaching Rust, from your first function to
+cross-platform and async code. Each one is a real improvement: when you finish, the app (or the CLI)
 actually uses your code.
 
 Every exercise has the same parts:
@@ -36,7 +36,7 @@ The **Where** line of the exercise gives the file. Inside it you'll find:
 - at the bottom, a `mod tests` block whose tests carry `#[ignore = "exercise N"]`. Ignored tests
   are skipped by a normal `cargo test`, so the project stays green until you start.
 
-Some exercises (3, 8 to 12) have no prepared tests: their **Done when** says how to check them.
+Some exercises (3, 8 to 13) have no prepared tests: their **Done when** says how to check them.
 
 ### 3. Run the exercise's tests and watch them fail
 
@@ -101,6 +101,7 @@ once everything is green.
 - **Rust by Example**: <https://doc.rust-lang.org/rust-by-example/>. Short runnable snippets.
 - **Rustlings**: <https://github.com/rust-lang/rustlings>. Tiny drills, good warm-up before exercise 1.
 - **std docs**: `rustup doc --std` opens them offline.
+- **Tokio tutorial**: <https://tokio.rs/tokio/tutorial>. Async Rust, for exercise 13.
 
 Before starting, read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and run the app once (`npm run dev`).
 
@@ -693,9 +694,10 @@ the full path, and clicking a tmux session in the app shows the right pane.
 
 **What to build.**
 
-1. Draw the room in Aseprite or Piskel. One frame is **96×60 px**. For an animation, put the
-   frames side by side in a single horizontal strip: 32 frames make a 3072×60 PNG, like
-   `lake.png`.
+1. Draw the room in Aseprite or Piskel. One frame is **192×120 px**; characters are 24×24 with
+   their feet at the bottom. For an animation, put the frames side by side in a single horizontal
+   strip: 16 frames make a 3072×120 PNG, like `lake.png`. You can also add a function to
+   `scripts/art/rooms.py`, which draws every shipped room.
 2. Save it as `assets/rooms/<id>.png` and add an entry to `rooms.json`:
 
    | Field | Meaning |
@@ -716,9 +718,75 @@ the full path, and clicking a tmux session in the app shows the right pane.
 there are at least 20 rooms. A `walkArea` outside the frame, a missing PNG or a wrong frame count
 would pass. Bonus: strengthen the test so it catches them.
 
+## Level 4: Async
+
+### Exercise 13: `cerebro serve`, the phone page without the tray app
+
+**Branch**: `features/ex13_cerebro_serve`.<br>
+**Goal**: `cerebro serve` serves the phone page from a terminal: on a Linux box without a desktop, over SSH, or to test the page without the app.<br>
+**Concepts**: `async`/`await`, the Tokio runtime, `spawn_blocking`, `tokio::select!`, intervals, graceful shutdown.<br>
+**Read**: the [Tokio tutorial](https://tokio.rs/tokio/tutorial) (*Hello Tokio*, *Spawning*, *Channels*, *Select*, *Graceful shutdown* in *Topics*); the [Async Book](https://rust-lang.github.io/async-book/), chapters 1 and 2.<br>
+**Where**: `crates/cerebro-cli/src/main.rs` (and a new `serve.rs`), `crates/cerebro-cli/src/injector.rs`, `crates/cerebro-cli/Cargo.toml`.<br>
+**Test**: none prepared; see **Done when**.
+
+**Why.** The tray app serves phones on its own (`src-tauri/src/mobile.rs`). The server itself
+lives in `crates/cerebro-web` and knows nothing about Tauri: any program can host it. Hosting it
+from the CLI is the smallest real async program you can write in this codebase: a timer, a
+blocking call to keep off the async threads, a server running beside it, and Ctrl-C to stop it
+all cleanly.
+
+**What to build.**
+
+1. `cerebro serve [--local] [--dist <dir>]`. `--dist` defaults to `dist` (built by
+   `npm run build:ui`). If `<dir>/index.html` is missing, print
+   `no UI in <dir>: run npm run build:ui first` and exit with code 1.
+2. Addresses:
+   - with `--local`, serve on `127.0.0.1` only, to test with a browser on the same machine;
+   - otherwise, ask the private network (`ManageNetwork`: add it to the CLI injector like
+     `src-tauri/src/injector.rs` does). `Online` with addresses: serve on each of them. Anything
+     else: print why (`ZeroTier is stopped`, `ZeroTier is offline`, `no private ZeroTier network
+     joined`…) and exit with code 1.
+   - the port is always `cerebro_web::DEFAULT_PORT`.
+3. Use the app's key, so links keep working: `AccessKey::load_or_create` on
+   `Paths::mobile_key_file()`. Print one line per link, e.g.
+   `http://10.147.17.42:4243/?key=…`.
+4. Every second, observe the sessions and publish the result (`Publisher::publish` with a
+   `SnapshotDto`), but only when its content changed (`Snapshot::same_content`).
+   `ObserveSessions::execute` blocks (files, `ps`): it must not run on an async worker thread.
+5. Ctrl-C stops the server, prints `stopped` and exits with code 0, within a second, even with a
+   phone page open.
+6. The tray app already listens on port 4243. If the port is taken, print
+   `port 4243 is already in use: is the Cerebro app running?` and exit with code 1.
+
+**Done when**
+
+- [ ] `cerebro serve --local`, then the printed link in a browser shows the live sessions;
+  starting a Claude session adds its card within 2 s;
+- [ ] `curl -i http://127.0.0.1:4243/api/snapshot` (no key) answers `401`;
+- [ ] Ctrl-C stops it within a second, with the page still open;
+- [ ] with the Cerebro app running, it prints the port message instead of crashing;
+- [ ] without `--local`, it serves on your ZeroTier address and your phone shows the page;
+- [ ] Clippy is silent.
+
+<details><summary>Hints</summary>
+
+- Only `serve` needs async. Rather than `#[tokio::main]` on `main`, build a runtime for it:
+  `tokio::runtime::Runtime::new()?.block_on(serve(...))`. Tokio features: `rt-multi-thread`,
+  `macros`, `time`, `signal`.
+- `WebServer::start` returns an `io::Error`: its `kind()` is `io::ErrorKind::AddrInUse` when the
+  port is taken.
+- The loop: `let mut tick = tokio::time::interval(Duration::from_secs(1));` then
+  `loop { tokio::select! { _ = tick.tick() => { … } _ = tokio::signal::ctrl_c() => break } }`.
+- `tokio::task::spawn_blocking` needs a `'static` closure: share the container in an `Arc` and
+  clone the `Arc` into it.
+- Dropping the `WebServer` stops it too: look at its `Drop` impl and at
+  `streams_each_snapshot_then_ends_when_stopped` in `crates/cerebro-web/src/server.rs`.
+</details>
+
 ---
 
 ## After the exercises
+
 
 - Read `crates/cerebro-domain/src/strategies/casting.rs` and
   `crates/cerebro-domain/src/usecases/observe_sessions.rs` again. You should now understand every line.

@@ -39,10 +39,14 @@ mod tests {
 
     #[test]
     fn round_trips_and_tolerates_missing_file() {
+        // Arrange
         let dir = tempfile::tempdir().unwrap();
         let store = JsonAssignmentStore::new(dir.path().join("assignments.json"));
+
+        // Act & Assert
         assert_eq!(store.load(), Assignments::default());
 
+        // Arrange
         let mut assignments = Assignments::default();
         assignments
             .rooms
@@ -51,7 +55,11 @@ mod tests {
             ActorKey::Lead(SessionId::new("s")),
             CharacterId::new("doop"),
         );
+
+        // Act
         store.save(&assignments).unwrap();
+
+        // Assert
         assert_eq!(store.load(), assignments);
     }
 }

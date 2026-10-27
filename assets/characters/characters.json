@@ -568,7 +568,8 @@
       "sprite": "characters/kid-omega.png"
     }
   ],
-  "frameSize": 12,
+  "frameHeight": 24,
+  "frameWidth": 24,
   "frames": {
     "stand": 0,
     "walk": [

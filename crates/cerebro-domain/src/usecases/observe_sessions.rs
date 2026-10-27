@@ -128,6 +128,7 @@ mod tests {
             status: SessionStatus::Busy,
             started_at: Timestamp(started),
             status_since: Timestamp(started),
+            remote_url: None,
             agents: (0..agents)
                 .map(|index| Agent {
                     id: AgentId::new(format!("{id}-a{index}")),
@@ -174,12 +175,17 @@ mod tests {
 
     #[test]
     fn casts_every_session_and_agent() {
-        let snapshot = use_case(vec![source(
+        // Arrange
+        let observe_sessions = use_case(vec![source(
             "tool-a",
             vec![session("tool-a", "s1", 1, 1)],
             None,
-        )])
-        .execute();
+        )]);
+
+        // Act
+        let snapshot = observe_sessions.execute();
+
+        // Assert
         assert_eq!(snapshot.warnings, []);
         assert_eq!(snapshot.character_count(), 2);
         assert_eq!(snapshot.scenes[0].cast.agents.len(), 1);
@@ -188,24 +194,34 @@ mod tests {
 
     #[test]
     fn merges_sources_in_launch_order() {
-        let snapshot = use_case(vec![
+        // Arrange
+        let observe_sessions = use_case(vec![
             source("tool-a", vec![session("tool-a", "late", 9, 0)], None),
             source("tool-b", vec![session("tool-b", "early", 3, 0)], None),
-        ])
-        .execute();
+        ]);
+
+        // Act
+        let snapshot = observe_sessions.execute();
+
+        // Assert
         assert_eq!(ids(&snapshot), ["early", "late"]);
     }
 
     #[test]
     fn a_failing_source_becomes_a_warning_without_hiding_the_others() {
-        let snapshot = use_case(vec![
+        // Arrange
+        let observe_sessions = use_case(vec![
             FakeSource {
                 tool: "tool-a",
                 result: Err(DomainError::SourceUnavailable("gone".into())),
             },
             source("tool-b", vec![session("tool-b", "s1", 1, 0)], None),
-        ])
-        .execute();
+        ]);
+
+        // Act
+        let snapshot = observe_sessions.execute();
+
+        // Assert
         assert_eq!(ids(&snapshot), ["s1"]);
         assert_eq!(
             snapshot.warnings,
@@ -218,12 +234,17 @@ mod tests {
 
     #[test]
     fn a_degraded_source_keeps_its_sessions_and_reports_why() {
-        let snapshot = use_case(vec![source(
+        // Arrange
+        let observe_sessions = use_case(vec![source(
             "tool-a",
             vec![session("tool-a", "s1", 1, 0)],
             Some("fallback mode"),
-        )])
-        .execute();
+        )]);
+
+        // Act
+        let snapshot = observe_sessions.execute();
+
+        // Assert
         assert_eq!(ids(&snapshot), ["s1"]);
         assert_eq!(snapshot.warnings[0].tool, ToolId::new("tool-a"));
         assert_eq!(snapshot.warnings[0].message, "fallback mode");

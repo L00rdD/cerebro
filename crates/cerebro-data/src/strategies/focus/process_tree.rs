@@ -61,9 +61,14 @@ mod tests {
 
     #[test]
     fn outermost_bundle_wins() {
+        // Act
         let app = bundle_of("/Applications/Visual Studio Code.app/Contents/Frameworks/Code Helper (Plugin).app/Contents/MacOS/x").unwrap();
+
+        // Assert
         assert_eq!(app.bundle_path, "/Applications/Visual Studio Code.app");
         assert_eq!(app.name, "Visual Studio Code");
+
+        // Act & Assert
         assert_eq!(bundle_of("/bin/zsh"), None);
     }
 }

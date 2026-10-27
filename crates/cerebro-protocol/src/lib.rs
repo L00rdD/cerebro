@@ -7,6 +7,7 @@
 //! sessions/<session_id>.json            one HookSession per Claude Code session
 //! agents/<session_id>/<agent_id>.json   one HookAgent per running subagent
 //! assignments.json                      stable room / character picks (app only)
+//! mobile-key                            secret of the phone link (app only)
 //! ```
 
 use std::fs;
@@ -113,6 +114,11 @@ impl Paths {
         self.cerebro_dir().join("assignments.json")
     }
 
+    /// Secret of the phone link (app only). Delete it to revoke every link given so far.
+    pub fn mobile_key_file(&self) -> PathBuf {
+        self.cerebro_dir().join("mobile-key")
+    }
+
     /// Claude Code's own registry of live sessions (internal, undocumented format).
     pub fn claude_sessions_dir(&self) -> PathBuf {
         self.home.join(".claude").join("sessions")
@@ -162,6 +168,7 @@ mod tests {
 
     #[test]
     fn sanitize_id_strips_path_tricks() {
+        // Act & Assert
         assert_eq!(
             sanitize_id("../../etc/passwd").as_deref(),
             Some("etcpasswd")
@@ -172,6 +179,7 @@ mod tests {
 
     #[test]
     fn atomic_write_round_trips() {
+        // Arrange
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("nested/agent.json");
         let agent = HookAgent {
@@ -180,16 +188,21 @@ mod tests {
             agent_type: "Explore".into(),
             started_at_ms: 42,
         };
+
+        // Act
         write_json_atomic(&path, &agent).unwrap();
+
+        // Assert
         assert_eq!(read_json::<HookAgent>(&path).unwrap(), agent);
         assert!(!path.with_extension("json.tmp").exists());
     }
 
     #[test]
     fn status_uses_snake_case_on_disk() {
-        assert_eq!(
-            serde_json::to_string(&HookStatus::Waiting).unwrap(),
-            "\"waiting\""
-        );
+        // Act
+        let serialized = serde_json::to_string(&HookStatus::Waiting).unwrap();
+
+        // Assert
+        assert_eq!(serialized, "\"waiting\"");
     }
 }
