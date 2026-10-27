@@ -8,7 +8,7 @@ Cerebro has two goals:
    Claude Code session as a room of the X-Mansion, seen from above. Glance at it to see which sessions are working, which are
    asleep, and which are waiting for you, then click one to jump to its terminal tab.
 2. **A Rust course in a real codebase.** The app is written to be improved by someone learning
-   Rust. Twelve exercises, from a first function to cross-platform code, each one shipping a real
+   Rust. Thirteen exercises, from a first function to cross-platform and async code, each one shipping a real
    improvement to the app. No toy programs: when an exercise is done, Cerebro uses your code.
 
 ## The app
@@ -72,6 +72,7 @@ Each exercise is to fill one gap:
 | 2. Idiomatic Rust | error handling, iterator statistics, Terminal.app support, borrowing | `Result` and `?`, iterators, trait objects, ownership and lifetimes |
 | 3. Systems | file watcher, config file, Windows and Linux, tmux (boss) | threads and channels, serde, conditional compilation |
 | Bonus | draw a room | pixel art, no Rust |
+| 4. Async | `cerebro serve`, the phone page from a terminal | `async`/`await`, Tokio, graceful shutdown |
 
 The architecture is part of the lesson: a pure domain crate, adapters behind traits, dependency
 injection at the edge. Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before the first exercise.

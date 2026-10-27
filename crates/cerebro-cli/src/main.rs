@@ -5,6 +5,7 @@
 //! cerebro list     one line per live session (uses `Display for Session`, exercise 2)
 //! cerebro stats    agents by type, busiest session… (uses `compute_stats`, exercise 5)
 //! cerebro hooks    hook installation status
+//! cerebro serve    the phone page, without the tray app (async, exercise 13)
 //! ```
 //!
 //! Reuse the same adapters as the app: look at `src-tauri/src/injector.rs`.
@@ -20,8 +21,8 @@ use cerebro_domain::usecases::ManageHooks;
 
 fn main() -> ExitCode {
     let command = std::env::args().nth(1);
-    let Some(command @ ("list" | "stats" | "hooks")) = command.as_deref() else {
-        eprintln!("usage: cerebro <list|stats|hooks>");
+    let Some(command @ ("list" | "stats" | "hooks" | "serve")) = command.as_deref() else {
+        eprintln!("usage: cerebro <list|stats|hooks|serve>");
         return ExitCode::from(2);
     };
     let container = match injector::build() {
@@ -34,6 +35,10 @@ fn main() -> ExitCode {
     match command {
         "list" => list(&container.observe.execute()),
         "hooks" => hooks(&container.hooks),
+        "serve" => {
+            eprintln!("not implemented yet: see EXERCISES.md, exercise 13");
+            ExitCode::FAILURE
+        }
         _ => {
             eprintln!("not implemented yet: see EXERCISES.md, exercise 5");
             ExitCode::FAILURE
