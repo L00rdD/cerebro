@@ -6,13 +6,15 @@
 //! poller    background loop running ObserveSessions and pushing updates
 //! tray      menu bar / system tray icon
 //! panel     the popover window: toggle, position, hide on blur
+//! mobile    serves the UI to phones on the private network, following its state
 //! commands  functions the UI can call
-//! dto       serializable view models sent to the UI
+//! dto       serializable view models sent to the UI (snapshots are shared with phones)
 //! ```
 
 mod commands;
 mod dto;
 mod injector;
+mod mobile;
 mod panel;
 mod poller;
 mod state;
@@ -41,6 +43,8 @@ pub fn run() {
             commands::open_folder,
             commands::hook_status,
             commands::install_hooks,
+            commands::mobile_status,
+            commands::start_network,
             commands::autostart_enabled,
             commands::set_autostart,
             commands::resize_panel,
@@ -55,6 +59,7 @@ pub fn run() {
             tray::create(app.handle())?;
             panel::attach(app.handle());
             poller::start(app.handle().clone());
+            mobile::start(app.handle().clone());
             Ok(())
         })
         .run(tauri::generate_context!())

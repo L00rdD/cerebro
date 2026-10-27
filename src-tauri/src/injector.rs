@@ -9,17 +9,24 @@ use cerebro_data::datasources::{
 use cerebro_data::repositories::{EmbeddedCatalog, JsonAssignmentStore};
 use cerebro_data::services::{
     ClaudeSettingsHookInstaller, PsProcessInspector, SystemClock, SystemCommandRunner,
+    ZeroTierNetwork,
 };
 use cerebro_data::strategies::focus::platform_focuser;
 use cerebro_domain::DomainError;
 use cerebro_domain::ports::{CatalogSource, Clock};
-use cerebro_domain::usecases::{FocusSession, ManageHooks, ObserveSessions, ObserveSessionsDeps};
+use cerebro_domain::usecases::{
+    FocusSession, ManageHooks, ManageNetwork, ObserveSessions, ObserveSessionsDeps,
+};
 use cerebro_protocol::Paths;
 
 pub struct Container {
     pub observe: ObserveSessions,
     pub focus: FocusSession,
     pub hooks: ManageHooks,
+    /// The private network phones reach Cerebro through.
+    pub network: ManageNetwork,
+    /// Where the secret of the phone link is kept.
+    pub mobile_key_file: PathBuf,
 }
 
 pub fn build() -> Result<Container, DomainError> {
@@ -46,11 +53,13 @@ pub fn build() -> Result<Container, DomainError> {
 
     Ok(Container {
         observe,
-        focus: FocusSession::new(platform_focuser(runner)),
+        focus: FocusSession::new(platform_focuser(runner.clone())),
         hooks: ManageHooks::new(Arc::new(ClaudeSettingsHookInstaller::new(
             paths.claude_settings_file(),
             hook_binary_path(),
         ))),
+        network: ManageNetwork::new(Arc::new(ZeroTierNetwork::new(runner))),
+        mobile_key_file: paths.mobile_key_file(),
     })
 }
 

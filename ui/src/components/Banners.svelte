@@ -6,6 +6,17 @@
   <div class="banner warn">{warning.message}</div>
 {/each}
 
+{#if app.phone && !app.connected && !app.error}
+  <div class="banner warn">Lost the link to the Mac. Retrying… Is it awake, with ZeroTier on?</div>
+{/if}
+
+{#if app.mobile?.state === "stopped"}
+  <div class="banner">
+    <span>{app.mobile.network} is not running: your phone can't reach Cerebro.</span>
+    <button onclick={() => app.startNetwork()}>Start</button>
+  </div>
+{/if}
+
 {#if app.hooks === "missing" || app.hooks === "outdated"}
   <div class="banner">
     <span>

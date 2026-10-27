@@ -6,6 +6,7 @@ members = [
     "crates/cerebro-data",
     "crates/cerebro-hook",
     "crates/cerebro-cli",
+    "crates/cerebro-web",
     "src-tauri",
 ]
 
@@ -19,6 +20,7 @@ rust-version = "1.85"
 cerebro-protocol = { path = "crates/cerebro-protocol" }
 cerebro-domain = { path = "crates/cerebro-domain" }
 cerebro-data = { path = "crates/cerebro-data" }
+cerebro-web = { path = "crates/cerebro-web" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"

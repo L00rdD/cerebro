@@ -4,8 +4,20 @@
   import { drawScene, type SceneActor } from "../lib/scene/renderer";
   import { onFrame } from "../lib/scene/ticker";
 
-  let { catalog, room, actors, scale = 2 }: { catalog: Catalog; room: RoomAsset; actors: SceneActor[]; scale?: number } =
-    $props();
+  let {
+    catalog,
+    room,
+    actors,
+    scale = 2,
+    fill = false,
+  }: {
+    catalog: Catalog;
+    room: RoomAsset;
+    actors: SceneActor[];
+    scale?: number;
+    /** Stretch to the parent's width (phone) instead of `scale` pixels per room pixel. */
+    fill?: boolean;
+  } = $props();
 
   let canvas: HTMLCanvasElement;
   let width = $derived(catalog.roomSize.width);
@@ -22,7 +34,11 @@
   });
 </script>
 
-<canvas bind:this={canvas} style:width="{width * scale}px" style:height="{height * scale}px"></canvas>
+<canvas
+  bind:this={canvas}
+  style:width={fill ? "100%" : `${width * scale}px`}
+  style:height={fill ? "auto" : `${height * scale}px`}
+></canvas>
 
 <style>
   canvas { display: block; border-radius: 5px; image-rendering: pixelated; }

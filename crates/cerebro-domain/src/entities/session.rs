@@ -54,6 +54,9 @@ pub struct Session {
     pub status: SessionStatus,
     pub started_at: Timestamp,
     pub status_since: Timestamp,
+    /// Where the session can be continued from another device (e.g. Claude Code's Remote
+    /// Control). `None` when the tool doesn't offer it or it is off for this session.
+    pub remote_url: Option<String>,
     pub agents: Vec<Agent>,
 }
 
@@ -101,6 +104,7 @@ mod tests {
             status: SessionStatus::Busy,
             started_at: Timestamp(0),
             status_since: Timestamp(0),
+            remote_url: None,
             agents: (0..agents)
                 .map(|index| Agent {
                     id: AgentId::new(format!("a{index}")),

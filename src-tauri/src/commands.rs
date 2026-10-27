@@ -7,7 +7,7 @@ use tauri::{AppHandle, Manager, State};
 use tauri_plugin_autostart::ManagerExt as _;
 use tauri_plugin_opener::OpenerExt as _;
 
-use crate::dto::{FocusDto, SnapshotDto, hook_setup_name};
+use crate::dto::{FocusDto, MobileDto, SnapshotDto, hook_setup_name};
 use crate::state::AppState;
 use crate::{panel, poller};
 
@@ -75,6 +75,26 @@ pub fn install_hooks(state: State<'_, AppState>) -> Result<&'static str, String>
         .install()
         .map(hook_setup_name)
         .map_err(|error| error.to_string())
+}
+
+/// How a phone reaches Cerebro. `None` until the first network check is done.
+#[tauri::command]
+pub fn mobile_status(state: State<'_, AppState>) -> Option<MobileDto> {
+    state.mobile()
+}
+
+/// Starts the private network service (may show the administrator password prompt).
+#[tauri::command]
+pub async fn start_network(app: AppHandle) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let state = app.state::<AppState>();
+        let result = state.container.network.start().map(|_| ());
+        // Check right away instead of at the next tick, whatever the outcome.
+        state.mobile_recheck.notify_one();
+        result.map_err(|error| error.to_string())
+    })
+    .await
+    .map_err(|error| error.to_string())?
 }
 
 #[tauri::command]

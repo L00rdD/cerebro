@@ -2,6 +2,7 @@
 //!
 //! The data layer implements them; tests implement them with in-memory fakes.
 
+use std::net::IpAddr;
 use std::path::PathBuf;
 
 use crate::DomainError;
@@ -70,4 +71,25 @@ pub enum HookSetup {
 pub trait HookInstaller: Send + Sync {
     fn status(&self) -> Result<HookSetup, DomainError>;
     fn install(&self) -> Result<(), DomainError>;
+}
+
+/// The private network (a VPN such as `ZeroTier`) other devices reach Cerebro through.
+pub trait PrivateNetwork: Send + Sync {
+    /// Shown to the user, e.g. `ZeroTier`.
+    fn name(&self) -> String;
+    /// Fails when the network can't be queried (e.g. missing permissions), not when it is down.
+    fn status(&self) -> Result<NetworkStatus, DomainError>;
+    /// Starts the network service. May ask for the administrator password.
+    fn start(&self) -> Result<(), DomainError>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum NetworkStatus {
+    NotInstalled,
+    /// Installed, but its service is not running.
+    Stopped,
+    /// Running, but not connected yet (no internet, still joining…).
+    Offline,
+    /// Connected. Only this machine's addresses on private networks, never on public ones.
+    Online(Vec<IpAddr>),
 }

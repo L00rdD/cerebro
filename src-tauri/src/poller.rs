@@ -34,13 +34,14 @@ pub fn start(app: AppHandle) {
         .expect("failed to start the poller thread");
 }
 
-/// Observes sessions once and pushes the result to the UI and the tray if it changed.
+/// Observes sessions once and pushes the result to the UI, the phones and the tray if it changed.
 pub fn refresh(app: &AppHandle) {
     let state = app.state::<AppState>();
     let snapshot = state.container.observe.execute();
     let dto = SnapshotDto::from(&snapshot);
     if state.replace_snapshot(snapshot) {
         tray::update(app, &dto.counts);
+        state.publisher.publish(&dto);
         let _ = app.emit("snapshot", &dto);
     }
 }

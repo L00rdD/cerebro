@@ -217,6 +217,7 @@ mod tests {
                 status,
                 started_at: Timestamp(since),
                 status_since: Timestamp(since),
+                remote_url: None,
                 agents: vec![],
             },
             process_start: start.map(Into::into),
