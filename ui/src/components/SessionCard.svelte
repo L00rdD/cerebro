@@ -12,7 +12,8 @@
 
   let menuOpen = $state(false);
 
-  /** Hovering a scene shows it at twice the size, over the panel, after a short delay. */
+  /** Hovering a scene shows it at twice the size, over the panel, after a short delay.
+   *  The zoom sits inside the card, so it shares the card's click and hover. */
   const ZOOM = 2;
   const ZOOM_DELAY_MS = 250;
   let card: HTMLDivElement;
@@ -176,7 +177,7 @@
     border: 1px solid rgba(255, 255, 255, 0.25);
     border-radius: 8px;
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
-    pointer-events: none;
+    /* Part of the card: clicks on it focus this session, and hovering it keeps it open. */
     z-index: 3;
   }
 
