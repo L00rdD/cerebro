@@ -16,11 +16,6 @@ impl ClaudeRegistrySource {
     pub fn new(dir: impl Into<PathBuf>) -> Self {
         Self { dir: dir.into() }
     }
-
-    /// EXERCISE 4: like `observe`, but keeps track of every file that could not be used.
-    pub fn scan(&self) -> Result<RegistryScan, DomainError> {
-        todo!("Exercise 4: scan {}", self.dir.display())
-    }
 }
 
 /// Result of a registry scan that does not silently drop bad files (EXERCISE 4).
@@ -31,27 +26,52 @@ pub struct RegistryScan {
 }
 
 /// Why a registry file was skipped (EXERCISE 4: derive `thiserror::Error` for nice messages).
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum RegistryProblem {
+    #[error("unreadable file: {0}")]
     Unreadable(String),
+    #[error("malformed file: {0}")]
     Malformed(String),
 }
 
 impl SessionReader for ClaudeRegistrySource {
     fn observe(&self) -> Result<Vec<ObservedSession>, DomainError> {
+        self.scan().map(|scan| scan.sessions)
+    }
+
+    /// EXERCISE 4: like `observe`, but keeps track of every file that could not be used.
+    fn scan(&self) -> Result<RegistryScan, DomainError> {
         let entries = fs::read_dir(&self.dir).map_err(|error| {
             DomainError::SourceUnavailable(format!("{}: {error}", self.dir.display()))
         })?;
 
-        // Unreadable or malformed files are skipped (EXERCISE 4 surfaces them instead).
         Ok(entries
             .filter_map(Result::ok)
             .map(|entry| entry.path())
             .filter(|path| path.extension().is_some_and(|ext| ext == "json"))
-            .filter_map(|path| fs::read(&path).ok())
-            .filter_map(|bytes| serde_json::from_slice::<RegistryEntry>(&bytes).ok())
-            .map(ObservedSession::from)
-            .collect())
+            .map(|path| {
+                fs::read(&path)
+                    .map_err(|error| RegistryProblem::Unreadable(error.to_string()))
+                    .and_then(|bytes| {
+                        serde_json::from_slice::<RegistryEntry>(&bytes)
+                            .map_err(|error| RegistryProblem::Malformed(error.to_string()))
+                    })
+                    .map(ObservedSession::from)
+                    .map_err(|error| (path, error))
+            })
+            .fold(
+                RegistryScan {
+                    sessions: Vec::new(),
+                    problems: Vec::new(),
+                },
+                |mut scan, result| {
+                    match result {
+                        Ok(session) => scan.sessions.push(session),
+                        Err(problem) => scan.problems.push(problem),
+                    }
+                    scan
+                },
+            ))
     }
 }
 
@@ -88,7 +108,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "exercise 4"]
     fn scan_reports_malformed_files() {
         // Arrange
         let dir = tempfile::tempdir().unwrap();

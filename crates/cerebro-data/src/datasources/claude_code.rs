@@ -5,12 +5,14 @@
 //! or empty while hooks show recent activity.
 
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use cerebro_domain::DomainError;
 use cerebro_domain::entities::{Agent, Session, SessionId, SessionStatus, ToolId};
 use cerebro_domain::ports::{Clock, Observation, SessionSource};
 
+use crate::datasources::{RegistryProblem, RegistryScan};
 use crate::services::ProcessInspector;
 
 /// [`ToolId`] of every session read from Claude Code.
@@ -31,6 +33,12 @@ pub struct ObservedSession {
 /// Reads raw session records (Claude Code's registry, Cerebro's hook records).
 pub trait SessionReader: Send + Sync {
     fn observe(&self) -> Result<Vec<ObservedSession>, DomainError>;
+    fn scan(&self) -> Result<RegistryScan, DomainError> {
+        self.observe().map(|session| RegistryScan {
+            sessions: session,
+            problems: Vec::new(),
+        })
+    }
 }
 
 /// Running subagents, recorded by the hook.
@@ -95,10 +103,11 @@ impl SessionSource for ClaudeCodeSource {
         let now = self.deps.clock.now();
         let hook_sessions = self.deps.hooks.observe().unwrap_or_default();
 
-        let (mut sessions, warning) = match self.deps.registry.observe() {
+        let (mut sessions, warning) = match self.deps.registry.scan() {
             Err(error) => (strip(hook_sessions), Some(fallback(&error.to_string()))),
             Ok(registry) => {
-                let live = self.verified(registry);
+                let issues = registry_warning(registry.problems);
+                let live = self.verified(registry.sessions);
                 let recent_hook_activity = hook_sessions
                     .iter()
                     .any(|hook| now.since(hook.session.status_since) < FALLBACK_ACTIVITY_WINDOW_MS);
@@ -106,9 +115,13 @@ impl SessionSource for ClaudeCodeSource {
                     let reason = fallback(
                         "Claude Code's session registry is empty while hooks report activity",
                     );
-                    (strip(hook_sessions), Some(reason))
+                    let warning = match issues {
+                        Some(issues) => format!("{reason} {issues}"),
+                        None => reason,
+                    };
+                    (strip(hook_sessions), Some(warning))
                 } else {
-                    (overlay_waiting(live, &hook_sessions), None)
+                    (overlay_waiting(live, &hook_sessions), issues)
                 }
             }
         };
@@ -128,6 +141,20 @@ fn fallback(reason: &str) -> String {
         "Fallback mode: {reason}. Sessions come from Cerebro's hooks only \
          (no names, no click-to-focus)."
     )
+}
+
+/// Summarizes the registry files that were skipped, or `None` when every file was usable.
+fn registry_warning(mut problems: Vec<(PathBuf, RegistryProblem)>) -> Option<String> {
+    problems.sort_by(|(left, _), (right, _)| left.cmp(right));
+    let (path, problem) = problems.first()?;
+    let name = path
+        .file_name()
+        .unwrap_or(path.as_os_str())
+        .to_string_lossy();
+    Some(match problems.len() {
+        1 => format!("1 registry file ignored ({name}: {problem})."),
+        count => format!("{count} registry files ignored, e.g. {name}: {problem}."),
+    })
 }
 
 fn strip(observed: Vec<ObservedSession>) -> Vec<Session> {
@@ -399,5 +426,50 @@ mod tests {
 
         // Assert
         assert_eq!(stale, Observation::default());
+    }
+
+    /// A registry that also reports skipped files, unlike `FakeReader`.
+    struct FakeScanner(Vec<ObservedSession>, Vec<(PathBuf, RegistryProblem)>);
+    impl SessionReader for FakeScanner {
+        fn observe(&self) -> Result<Vec<ObservedSession>, DomainError> {
+            Ok(self.0.clone())
+        }
+        fn scan(&self) -> Result<RegistryScan, DomainError> {
+            Ok(RegistryScan {
+                sessions: self.0.clone(),
+                problems: self.1.clone(),
+            })
+        }
+    }
+
+    #[test]
+    fn skipped_registry_files_become_a_warning() {
+        let observation = ClaudeCodeSource::new(ClaudeCodeDeps {
+            registry: Arc::new(FakeScanner(
+                vec![observed("s1", Some(10), None, SessionStatus::Idle, 1)],
+                vec![
+                    (
+                        "/sessions/9.json".into(),
+                        RegistryProblem::Malformed("eof".into()),
+                    ),
+                    (
+                        "/sessions/1.json".into(),
+                        RegistryProblem::Unreadable("denied".into()),
+                    ),
+                ],
+            )),
+            hooks: Arc::new(FakeReader(Ok(vec![]))),
+            agents: Arc::new(FakeAgents(vec![])),
+            processes: Arc::new(alive(&[(10, None)])),
+            clock: Arc::new(FixedClock(100)),
+        })
+        .observe()
+        .unwrap();
+
+        assert_eq!(ids(&observation), ["s1"]);
+        assert_eq!(
+            observation.warning.as_deref(),
+            Some("2 registry files ignored, e.g. 1.json: unreadable file: denied.")
+        );
     }
 }
