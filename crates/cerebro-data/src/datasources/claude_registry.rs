@@ -16,9 +16,31 @@ impl ClaudeRegistrySource {
     pub fn new(dir: impl Into<PathBuf>) -> Self {
         Self { dir: dir.into() }
     }
+}
+
+/// Result of a registry scan that does not silently drop bad files (EXERCISE 4).
+#[derive(Debug)]
+pub struct RegistryScan {
+    pub sessions: Vec<ObservedSession>,
+    pub problems: Vec<(PathBuf, RegistryProblem)>,
+}
+
+/// Why a registry file was skipped (EXERCISE 4: derive `thiserror::Error` for nice messages).
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum RegistryProblem {
+    #[error("unreadable file: {0}")]
+    Unreadable(String),
+    #[error("malformed file: {0}")]
+    Malformed(String),
+}
+
+impl SessionReader for ClaudeRegistrySource {
+    fn observe(&self) -> Result<Vec<ObservedSession>, DomainError> {
+        self.scan().map(|scan| scan.sessions)
+    }
 
     /// EXERCISE 4: like `observe`, but keeps track of every file that could not be used.
-    pub fn scan(&self) -> Result<RegistryScan, DomainError> {
+    fn scan(&self) -> Result<RegistryScan, DomainError> {
         let entries = fs::read_dir(&self.dir).map_err(|error| {
             DomainError::SourceUnavailable(format!("{}: {error}", self.dir.display()))
         })?;
@@ -50,34 +72,6 @@ impl ClaudeRegistrySource {
                     scan
                 },
             ))
-    }
-}
-
-/// Result of a registry scan that does not silently drop bad files (EXERCISE 4).
-#[derive(Debug)]
-pub struct RegistryScan {
-    pub sessions: Vec<ObservedSession>,
-    pub problems: Vec<(PathBuf, RegistryProblem)>,
-}
-
-/// Why a registry file was skipped (EXERCISE 4: derive `thiserror::Error` for nice messages).
-#[derive(Debug, PartialEq, Eq, thiserror::Error)]
-pub enum RegistryProblem {
-    #[error("unreadable file: {0}")]
-    Unreadable(String),
-    #[error("malformed file: {0}")]
-    Malformed(String),
-}
-
-impl SessionReader for ClaudeRegistrySource {
-    fn observe(&self) -> Result<Vec<ObservedSession>, DomainError> {
-        self.scan()
-            .inspect(|scan| {
-                for (path, problem) in &scan.problems {
-                    eprintln!("{}: {}", path.display(), problem);
-                }
-            })
-            .map(|scan| scan.sessions)
     }
 }
 
