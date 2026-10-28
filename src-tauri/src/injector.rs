@@ -6,16 +6,16 @@ use std::sync::Arc;
 use cerebro_data::datasources::{
     ClaudeCodeDeps, ClaudeCodeSource, ClaudeRegistrySource, HookAgentSource, HookSessionSource,
 };
-use cerebro_data::repositories::{EmbeddedCatalog, JsonAssignmentStore};
+use cerebro_data::repositories::{EmbeddedCatalog, JsonAssignmentStore, JsonNetworkChoiceStore};
 use cerebro_data::services::{
-    ClaudeSettingsHookInstaller, PsProcessInspector, SystemClock, SystemCommandRunner,
-    ZeroTierNetwork,
+    ClaudeSettingsHookInstaller, LocalNetwork, PsProcessInspector, SystemClock,
+    SystemCommandRunner, ZeroTierNetwork,
 };
 use cerebro_data::strategies::focus::platform_focuser;
 use cerebro_domain::DomainError;
 use cerebro_domain::ports::{CatalogSource, Clock};
 use cerebro_domain::usecases::{
-    FocusSession, ManageHooks, ManageNetwork, ObserveSessions, ObserveSessionsDeps,
+    FocusSession, ManageHooks, ManageNetworks, ObserveSessions, ObserveSessionsDeps,
 };
 use cerebro_protocol::Paths;
 
@@ -23,8 +23,8 @@ pub struct Container {
     pub observe: ObserveSessions,
     pub focus: FocusSession,
     pub hooks: ManageHooks,
-    /// The private network phones reach Cerebro through.
-    pub network: ManageNetwork,
+    /// The networks phones reach Cerebro through, each turned on or off by the user.
+    pub networks: ManageNetworks,
     /// Where the secret of the phone link is kept.
     pub mobile_key_file: PathBuf,
 }
@@ -58,7 +58,14 @@ pub fn build() -> Result<Container, DomainError> {
             paths.claude_settings_file(),
             hook_binary_path(),
         ))),
-        network: ManageNetwork::new(Arc::new(ZeroTierNetwork::new(runner))),
+        // Listed in the panel in this order.
+        networks: ManageNetworks::new(
+            vec![
+                Arc::new(ZeroTierNetwork::new(runner)),
+                Arc::new(LocalNetwork),
+            ],
+            Arc::new(JsonNetworkChoiceStore::new(paths.phone_networks_file())),
+        ),
         mobile_key_file: paths.mobile_key_file(),
     })
 }

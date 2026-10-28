@@ -22,4 +22,7 @@ pub enum DomainError {
 
     #[error("unknown session {0}")]
     UnknownSession(String),
+
+    #[error("unknown network {0}")]
+    UnknownNetwork(String),
 }

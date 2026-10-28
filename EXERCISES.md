@@ -1079,9 +1079,10 @@ it's not implemented yet."
   `no UI in <dir>: run npm run build:ui first` and exits with code 1.
 - [ ] Addresses:
   - with `--local`, it serves on `127.0.0.1` only, to test with a browser on the same machine;
-  - otherwise, it asks the private network. Online with addresses: it serves on each of them.
-    Anything else: it prints why (`ZeroTier is stopped`, `ZeroTier is offline`, `no private
-    ZeroTier network joined`…) and exits with code 1;
+  - otherwise, it asks the networks turned on in the app (ZeroTier, local network). Online with
+    addresses: it serves on each of them. None online: it prints why for each (`ZeroTier is
+    stopped`, `ZeroTier is offline`, `no private ZeroTier network joined`, `Local network is
+    off`…) and exits with code 1;
   - the port is always the app's phone port, 4243.
 - [ ] Links keep working: it uses the app's key (`~/.cerebro/mobile-key`, created if missing) and
   prints one line per link, e.g. `http://10.147.17.42:4243/?key=…`.
@@ -1122,17 +1123,18 @@ Ctrl-C to stop it all cleanly.
 
 - `crates/cerebro-cli/src/main.rs`: the `"serve"` arm, and the argument reading, which only looks at
   the first argument today. A new `serve.rs` for the command itself.
-- `crates/cerebro-cli/src/injector.rs`: add `ManageNetwork` to `Container`, built like
-  `src-tauri/src/injector.rs` does (`ZeroTierNetwork::new(runner)`), and the key file,
+- `crates/cerebro-cli/src/injector.rs`: add `ManageNetworks` to `Container`, built like
+  `src-tauri/src/injector.rs` does (`ZeroTierNetwork`, `LocalNetwork`, `JsonNetworkChoiceStore`), and the key file,
   `Paths::mobile_key_file()`.
 - `crates/cerebro-cli/Cargo.toml`: add `cerebro-web` and `tokio`.
 - From `cerebro_web`: `WebServer::start(addresses, publisher, assets, key)` (async),
   `Publisher::new` and `Publisher::publish`, `DirAssets::new(dir)`, `AccessKey::load_or_create`,
   `AccessKey::as_str`, `DEFAULT_PORT`, and `cerebro_web::dto::SnapshotDto` (`From<&Snapshot>`).
-- From the domain: `ManageNetwork::status()` returns a `NetworkStatus` (`NotInstalled`, `Stopped`,
-  `Offline`, `Online(Vec<IpAddr>)`) and `ManageNetwork::name()` gives `ZeroTier`;
+- From the domain: `ManageNetworks::check()` returns one `NetworkCheck` per network: its `name`
+  and its `status`, `None` when turned off, else a `NetworkStatus` (`NotInstalled`, `Stopped`,
+  `Offline`, `Online(Vec<IpAddr>)`);
   `ObserveSessions::execute`; `Snapshot::same_content`.
-- `MobileDto::new` in `src-tauri/src/dto.rs` builds the same links: `http://{address}/?key=…`.
+- `NetworkDto::new` in `src-tauri/src/dto.rs` builds the same links: `http://{address}/?key=…`.
 </details>
 
 <details><summary>Hint 3: the trap</summary>

@@ -6,7 +6,7 @@
 //! poller    background loop running ObserveSessions and pushing updates
 //! tray      menu bar / system tray icon
 //! panel     the popover window: toggle, position, hide on blur
-//! mobile    serves the UI to phones on the private network, following its state
+//! mobile    serves the UI to phones on the networks turned on, following their state
 //! commands  functions the UI can call
 //! dto       serializable view models sent to the UI (snapshots are shared with phones)
 //! ```
@@ -46,6 +46,7 @@ pub fn run() {
             commands::install_hooks,
             commands::mobile_status,
             commands::share_phone_link,
+            commands::set_network_on,
             commands::start_network,
             commands::autostart_enabled,
             commands::set_autostart,

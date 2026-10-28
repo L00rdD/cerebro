@@ -1,16 +1,19 @@
-//! Serves Cerebro to phones on the private network (`ZeroTier`), and keeps the server in step
-//! with it: started once the network is up, moved when its address changes, stopped when it
-//! goes away. Phones take over a session through its tool (e.g. Claude Code's Remote Control).
+//! Serves Cerebro to phones on the networks the user turned on (`ZeroTier`, local network), and
+//! keeps one server per network in step with it: started once the network is up, moved when
+//! its address changes, stopped when it goes away or is turned off. Phones take over a session
+//! through its tool (e.g. Claude Code's Remote Control).
 
+use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
 use cerebro_domain::ports::NetworkStatus;
+use cerebro_domain::usecases::NetworkCheck;
 use cerebro_web::{AccessKey, Asset, Assets, DEFAULT_PORT, WebServer};
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::dto::MobileDto;
+use crate::dto::{MobileDto, NetworkDto};
 use crate::state::AppState;
 
 /// Joining a network or getting an address takes seconds: no need to check more often.
@@ -35,51 +38,58 @@ pub fn start(app: AppHandle) {
 
 async fn supervise(app: AppHandle) {
     let state = app.state::<AppState>();
-    let network = state.container.network.name();
     let key = match AccessKey::load_or_create(&state.container.mobile_key_file) {
         Ok(key) => key,
         Err(error) => {
-            publish(
-                &app,
-                &MobileDto {
-                    network,
+            let message = format!("cannot create the phone link key: {error}");
+            let networks = check_networks(&app)
+                .await
+                .into_iter()
+                .map(|check| NetworkDto {
+                    id: check.id,
+                    name: check.name,
                     state: "error",
                     urls: Vec::new(),
-                    message: Some(format!("cannot create the phone link key: {error}")),
-                },
-            );
+                    message: Some(message.clone()),
+                })
+                .collect();
+            publish(&app, &MobileDto { networks });
             return;
         }
     };
     let assets: Arc<dyn Assets> = Arc::new(EmbeddedAssets(app.clone()));
-    let mut server: Option<WebServer> = None;
+    // One server per network: a Wi-Fi change doesn't cut the phones following over ZeroTier.
+    let mut servers: HashMap<&'static str, WebServer> = HashMap::new();
 
     loop {
-        let status = network_status(&app).await;
-        let wanted = addresses(&status);
-        let current = server
-            .as_ref()
-            .map(|running| running.addresses().to_vec())
-            .unwrap_or_default();
-        let mut server_error = None;
-        if wanted != current {
-            // Dropping the old server closes its listeners and event streams.
-            server = None;
-            if !wanted.is_empty() {
-                match WebServer::start(&wanted, &state.publisher, assets.clone(), key.clone()).await
-                {
-                    Ok(started) => server = Some(started),
-                    Err(error) => {
-                        server_error = Some(format!("cannot serve the phone page: {error}"));
+        let mut networks = Vec::new();
+        for check in check_networks(&app).await {
+            let wanted = addresses(&check);
+            let current = servers
+                .get(check.id)
+                .map(|running| running.addresses().to_vec())
+                .unwrap_or_default();
+            let mut server_error = None;
+            if wanted != current {
+                // Dropping the old server closes its listeners and event streams.
+                servers.remove(check.id);
+                if !wanted.is_empty() {
+                    match WebServer::start(&wanted, &state.publisher, assets.clone(), key.clone())
+                        .await
+                    {
+                        Ok(started) => {
+                            servers.insert(check.id, started);
+                        }
+                        Err(error) => {
+                            server_error = Some(format!("cannot serve the phone page: {error}"));
+                        }
                     }
                 }
             }
+            let served_on = servers.get(check.id).map_or(&[][..], WebServer::addresses);
+            networks.push(NetworkDto::new(&check, served_on, &key, server_error));
         }
-        let served_on = server.as_ref().map_or(&[][..], WebServer::addresses);
-        publish(
-            &app,
-            &MobileDto::new(network.clone(), &status, served_on, &key, server_error),
-        );
+        publish(&app, &MobileDto { networks });
 
         tokio::select! {
             () = tokio::time::sleep(CHECK_INTERVAL) => {}
@@ -89,23 +99,17 @@ async fn supervise(app: AppHandle) {
 }
 
 /// `zerotier-cli` is a blocking process call: keep it off the async workers.
-async fn network_status(app: &AppHandle) -> Result<NetworkStatus, String> {
+async fn check_networks(app: &AppHandle) -> Vec<NetworkCheck> {
     let app = app.clone();
-    tauri::async_runtime::spawn_blocking(move || {
-        app.state::<AppState>()
-            .container
-            .network
-            .status()
-            .map_err(|error| error.to_string())
-    })
-    .await
-    .unwrap_or_else(|error| Err(error.to_string()))
+    tauri::async_runtime::spawn_blocking(move || app.state::<AppState>().container.networks.check())
+        .await
+        .unwrap_or_default()
 }
 
-/// Private addresses only: the network adapter never reports public ones.
-fn addresses(status: &Result<NetworkStatus, String>) -> Vec<SocketAddr> {
-    match status {
-        Ok(NetworkStatus::Online(ips)) => ips
+/// Private addresses only: the network adapters never report public ones.
+fn addresses(check: &NetworkCheck) -> Vec<SocketAddr> {
+    match &check.status {
+        Some(Ok(NetworkStatus::Online(ips))) => ips
             .iter()
             .map(|ip| SocketAddr::new(*ip, DEFAULT_PORT))
             .collect(),

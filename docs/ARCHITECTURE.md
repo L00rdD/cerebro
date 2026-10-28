@@ -58,10 +58,12 @@ Template mapping: `repositories/` (abstract) → `ports/`; `usecases/` → `usec
    - the domain then sorts every session by launch time and casts rooms and characters
      (`strategies/casting.rs`), persisted in `~/.cerebro/assignments.json`.
 4. If the snapshot content changed, it is sent to the UI (`snapshot` event) and the tray is updated.
-5. **Phones** (`src-tauri/src/mobile.rs`): every 10 s the supervisor asks `ManageNetwork` for the
-   private network's state (`ZeroTierNetwork` runs `zerotier-cli -j`). It starts a `WebServer` on
-   this machine's addresses on **private** networks, moves it when they change and stops it when
-   the network goes away. The poller publishes each new snapshot to the server's `Publisher`;
+5. **Phones** (`src-tauri/src/mobile.rs`): every 10 s the supervisor asks `ManageNetworks` for the
+   state of each network the user turned on (`~/.cerebro/phone-networks.json`): `ZeroTierNetwork`
+   runs `zerotier-cli -j`, `LocalNetwork` lists the physical interfaces' private IPv4 addresses
+   (VPN tunnels and virtual bridges left out). It runs one `WebServer` per network on this
+   machine's addresses there, moves it when they change and stops it when the network goes away
+   or is turned off. The poller publishes each new snapshot to the server's `Publisher`;
    every open page gets it as a server-sent event. The API wants the key from the phone link
    (`~/.cerebro/mobile-key`); static files don't.
 6. **The UI** draws each scene on a canvas from PNG sprite sheets. Wandering is a pure function
@@ -127,6 +129,7 @@ registry's `bridgeSessionId`, written while Remote Control is on, and links to
   terminal-specific.
 - **A web page over a native app**: no store, no signing, one UI build for both. Served over the
   private network (ZeroTier) rather than the internet: nothing exposed publicly, and a key on top
-  because a private network can still have other members.
+  because a private network can still have other members. The local network is an opt-in for
+  home: plain HTTP there, so the key could be read by anyone on the same Wi-Fi.
 - **Server-sent events** over WebSockets: the phone only listens; SSE reconnects by itself and
   is plain HTTP.

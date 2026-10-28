@@ -44,12 +44,19 @@ export type FocusDto = { kind: "tab"; app: string } | { kind: "app"; app: string
 
 export type HookSetup = "installed" | "missing" | "outdated";
 
-/** How a phone reaches Cerebro through the private network (desktop panel only). */
+/** How a phone reaches Cerebro: one entry per network, in the panel's order (desktop panel only). */
 export interface MobileDto {
+  networks: NetworkDto[];
+}
+
+export interface NetworkDto {
+  /** e.g. "zerotier", "local". */
+  id: string;
   /** e.g. "ZeroTier". */
-  network: string;
-  state: "notInstalled" | "stopped" | "offline" | "online" | "error";
-  /** One link per private address, key included. Empty until the server listens. */
+  name: string;
+  /** "off" when the user turned it off: not queried, not served. */
+  state: "off" | "notInstalled" | "stopped" | "offline" | "online" | "error";
+  /** One link per address, key included. Empty until the server listens. */
   urls: string[];
   message: string | null;
 }

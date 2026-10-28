@@ -119,6 +119,11 @@ impl Paths {
         self.cerebro_dir().join("mobile-key")
     }
 
+    /// Networks the phone page is served on, as turned on or off by the user (app only).
+    pub fn phone_networks_file(&self) -> PathBuf {
+        self.cerebro_dir().join("phone-networks.json")
+    }
+
     /// Claude Code's own registry of live sessions (internal, undocumented format).
     pub fn claude_sessions_dir(&self) -> PathBuf {
         self.home.join(".claude").join("sessions")

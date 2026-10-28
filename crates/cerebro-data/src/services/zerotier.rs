@@ -51,8 +51,17 @@ impl ZeroTierNetwork {
 }
 
 impl PrivateNetwork for ZeroTierNetwork {
+    fn id(&self) -> &'static str {
+        "zerotier"
+    }
+
     fn name(&self) -> String {
         "ZeroTier".into()
+    }
+
+    /// Encrypted end to end and reachable from anywhere: the network Cerebro was built for.
+    fn on_by_default(&self) -> bool {
+        true
     }
 
     fn status(&self) -> Result<NetworkStatus, DomainError> {
