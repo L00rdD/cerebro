@@ -30,7 +30,8 @@ Cerebro has two goals:
 ## On your phone
 
 The same view, live, on your phone: no App Store app, a page served by Cerebro and added to the
-home screen. Phones reach the Mac through **ZeroTier** (a private network you already run on both).
+home screen. Phones reach the Mac through **ZeroTier** (a private network you already run on both,
+for anywhere), or straight over the **local network** (same Wi-Fi, from the couch).
 
 - **Follow**: every session, its room and cast, its status (*needs you* included), live.
 - **Take over**: Cerebro doesn't type into terminals. A session started with Claude Code's
@@ -40,9 +41,13 @@ home screen. Phones reach the Mac through **ZeroTier** (a private network you al
 
 **Setup, once.**
 
-1. Join the Mac and the phone to the same **private** ZeroTier network. Cerebro serves only on
-   private networks (members approved by you), never on public ones, nor on your LAN.
-2. In the panel, the **Phone** line shows the address. **Copy link**: it ends with `?key=…`, the
+1. Pick the networks in the panel, one switch each (remembered in `~/.cerebro/phone-networks.json`):
+   - **ZeroTier** (on by default): join the Mac and the phone to the same **private** ZeroTier
+     network. Cerebro serves only on private networks (members approved by you), never on public
+     ones. Encrypted, works from anywhere.
+   - **Local network** (off by default): no VPN, the phone just needs the same Wi-Fi. The traffic,
+     key included, is **not encrypted**: turn it on at home, not on a café or office Wi-Fi.
+2. Each network's line shows its address. **Copy link**: it ends with `?key=…`, the
    secret that lets the page read your sessions (stored in `~/.cerebro/mobile-key`; delete that
    file to revoke every link). **Share** (macOS) sends it straight to the phone through AirDrop.
 3. On the phone, open the link in Safari, then **Share → Add to Home Screen**.
@@ -133,6 +138,7 @@ EXERCISES.md              learn Rust by improving Cerebro
 Cerebro only reads local files (`~/.claude/sessions`, `~/.cerebro`) and runs local system tools
 to inspect processes, focus terminals and query ZeroTier (`ps`, `open`, `osascript`,
 `zerotier-cli`). Nothing leaves the machine, except the phone page: served on your private
-ZeroTier networks only, and its data only to holders of the link's key.
+ZeroTier networks, and on the local network only if you turn it on; its data only to holders of
+the link's key.
 
 X-Men characters are Marvel properties; this is a personal fan project, not for distribution.

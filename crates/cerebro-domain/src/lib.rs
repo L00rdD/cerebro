@@ -7,7 +7,7 @@
 //! entities   immutable business types (Session, Cast, Snapshot…)
 //! ports      traits implemented by the data layer (SessionSource, TerminalFocuser, PrivateNetwork…)
 //! strategies reusable policies (stable casting of rooms and characters)
-//! usecases   one struct per application action (ObserveSessions, FocusSession, ManageNetwork…)
+//! usecases   one struct per application action (ObserveSessions, FocusSession, ManageNetworks…)
 //! ```
 
 pub mod entities;

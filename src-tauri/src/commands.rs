@@ -83,24 +83,36 @@ pub fn mobile_status(state: State<'_, AppState>) -> Option<MobileDto> {
     state.mobile()
 }
 
-/// Sends the phone link to the phone (`AirDrop`). The panel hides first: the share window takes
-/// the focus anyway.
+/// Sends a network's phone link to the phone (`AirDrop`). The panel hides first: the share
+/// window takes the focus anyway.
 #[tauri::command]
-pub fn share_phone_link(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+pub fn share_phone_link(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    network: String,
+) -> Result<(), String> {
     let url = state
         .mobile()
-        .and_then(|mobile| mobile.urls.into_iter().next())
+        .and_then(|mobile| mobile.link(&network).map(str::to_owned))
         .ok_or("no phone link yet")?;
     panel::hide(&app);
     share::send(&url)
 }
 
-/// Starts the private network service (may show the administrator password prompt).
+/// Serves the phone page on a network, or stops serving it there.
 #[tauri::command]
-pub async fn start_network(app: AppHandle) -> Result<(), String> {
+pub fn set_network_on(state: State<'_, AppState>, network: String, on: bool) -> Result<(), String> {
+    let result = state.container.networks.set_on(&network, on);
+    state.mobile_recheck.notify_one();
+    result.map_err(|error| error.to_string())
+}
+
+/// Starts a network's service (may show the administrator password prompt).
+#[tauri::command]
+pub async fn start_network(app: AppHandle, network: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || {
         let state = app.state::<AppState>();
-        let result = state.container.network.start().map(|_| ());
+        let result = state.container.networks.start(&network).map(|_| ());
         // Check right away instead of at the next tick, whatever the outcome.
         state.mobile_recheck.notify_one();
         result.map_err(|error| error.to_string())

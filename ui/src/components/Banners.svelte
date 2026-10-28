@@ -7,15 +7,15 @@
 {/each}
 
 {#if app.phone && !app.connected && !app.error}
-  <div class="banner warn">Lost the link to the Mac. Retrying… Is it awake, with ZeroTier on?</div>
+  <div class="banner warn">Lost the link to the Mac. Retrying… Is it awake, and are you on its network?</div>
 {/if}
 
-{#if app.mobile?.state === "stopped"}
+{#each app.mobile?.networks.filter((network) => network.state === "stopped") ?? [] as network (network.id)}
   <div class="banner">
-    <span>{app.mobile.network} is not running: your phone can't reach Cerebro.</span>
-    <button onclick={() => app.startNetwork()}>Start</button>
+    <span>{network.name} is not running: your phone can't reach Cerebro through it.</span>
+    <button onclick={() => app.startNetwork(network)}>Start</button>
   </div>
-{/if}
+{/each}
 
 {#if app.hooks === "missing" || app.hooks === "outdated"}
   <div class="banner">

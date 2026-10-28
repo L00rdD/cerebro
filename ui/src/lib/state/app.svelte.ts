@@ -3,7 +3,7 @@
 
 import { desktop, Unauthorized, webBackend } from "../api/backend";
 import type { DesktopBackend } from "../api/desktop";
-import type { HookSetup, MobileDto, SnapshotDto } from "../api/types";
+import type { HookSetup, MobileDto, NetworkDto, SnapshotDto } from "../api/types";
 import type { Catalog } from "../assets/catalog";
 import { loadCatalog } from "../assets/catalog";
 import { setAnimating } from "../scene/ticker";
@@ -96,17 +96,26 @@ class AppState {
     this.autostart = await desktop.setAutostart(enabled).catch(() => !enabled);
   }
 
-  async startNetwork() {
+  async setNetworkOn(network: NetworkDto, on: boolean) {
     if (!desktop) return;
     try {
-      await desktop.startNetwork();
+      await desktop.setNetworkOn(network.id, on);
     } catch (e) {
-      this.notify(`Couldn't start ${this.mobile?.network ?? "the network"}: ${String(e)}`);
+      this.notify(`Couldn't turn ${network.name} ${on ? "on" : "off"}: ${String(e)}`);
     }
   }
 
-  async copyPhoneLink() {
-    const url = this.mobile?.urls[0];
+  async startNetwork(network: NetworkDto) {
+    if (!desktop) return;
+    try {
+      await desktop.startNetwork(network.id);
+    } catch (e) {
+      this.notify(`Couldn't start ${network.name}: ${String(e)}`);
+    }
+  }
+
+  async copyPhoneLink(network: NetworkDto) {
+    const url = network.urls[0];
     if (!url) return;
     await navigator.clipboard.writeText(url);
     this.notify("Phone link copied. Open it in Safari on your phone, then Share → Add to Home Screen.");
@@ -115,10 +124,10 @@ class AppState {
   /** Desktop on macOS: the phone link can go straight to the phone through AirDrop. */
   readonly canShare = desktop !== null && navigator.userAgent.includes("Mac");
 
-  async sharePhoneLink() {
+  async sharePhoneLink(network: NetworkDto) {
     if (!desktop) return;
     try {
-      await desktop.sharePhoneLink();
+      await desktop.sharePhoneLink(network.id);
     } catch (e) {
       this.notify(`Couldn't share the phone link: ${String(e)}`);
     }

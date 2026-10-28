@@ -16,10 +16,11 @@ pub struct AppState {
     pub last_hidden: Mutex<Option<Instant>>,
     /// Drives the refresh rate and pauses UI animations while hidden.
     pub panel_visible: AtomicBool,
-    /// Feeds the phone page; outlives the servers, which follow the network.
+    /// Feeds the phone page; outlives the servers, which follow the networks.
     pub publisher: Publisher,
     mobile: Mutex<Option<MobileDto>>,
-    /// Wakes the mobile supervisor before its next check (e.g. right after starting `ZeroTier`).
+    /// Wakes the mobile supervisor before its next check (e.g. right after starting `ZeroTier`
+    /// or turning a network on).
     pub mobile_recheck: Notify,
 }
 

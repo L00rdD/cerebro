@@ -6,7 +6,7 @@ use std::net::IpAddr;
 use std::path::PathBuf;
 
 use crate::DomainError;
-use crate::entities::{Assignments, Catalog, Session, ToolId};
+use crate::entities::{Assignments, Catalog, NetworkChoices, Session, ToolId};
 use crate::time::Timestamp;
 
 /// Live sessions of one AI tool. The data layer does whatever that tool needs (merging several
@@ -73,10 +73,15 @@ pub trait HookInstaller: Send + Sync {
     fn install(&self) -> Result<(), DomainError>;
 }
 
-/// The private network (a VPN such as `ZeroTier`) other devices reach Cerebro through.
+/// A private network other devices reach Cerebro through: a VPN such as `ZeroTier`, or the
+/// local network the Mac is plugged into.
 pub trait PrivateNetwork: Send + Sync {
+    /// Stable identifier, used to remember whether the user turned it on, e.g. `zerotier`.
+    fn id(&self) -> &'static str;
     /// Shown to the user, e.g. `ZeroTier`.
     fn name(&self) -> String;
+    /// Whether Cerebro serves on it until the user decides otherwise.
+    fn on_by_default(&self) -> bool;
     /// Fails when the network can't be queried (e.g. missing permissions), not when it is down.
     fn status(&self) -> Result<NetworkStatus, DomainError>;
     /// Starts the network service. May ask for the administrator password.
@@ -92,4 +97,10 @@ pub enum NetworkStatus {
     Offline,
     /// Connected. Only this machine's addresses on private networks, never on public ones.
     Online(Vec<IpAddr>),
+}
+
+/// Remembers which networks the user turned on or off.
+pub trait NetworkChoiceStore: Send + Sync {
+    fn load(&self) -> NetworkChoices;
+    fn save(&self, choices: &NetworkChoices) -> Result<(), DomainError>;
 }
