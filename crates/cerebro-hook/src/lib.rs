@@ -36,39 +36,45 @@ pub fn handle(raw_event: &str, paths: &Paths, now_ms: u64) -> io::Result<Outcome
         "Notification" if is_permission_prompt(&event) => {
             set_status(paths, &session_id, cwd, HookStatus::Waiting, now_ms)
         }
-        "SessionEnd" => {
-            remove_if_exists(&paths.hook_session_file(&session_id))?;
-            match fs::remove_dir_all(paths.session_agents_dir(&session_id)) {
-                Err(error) if error.kind() != io::ErrorKind::NotFound => return Err(error),
-                _ => {}
-            }
-            Ok(Outcome::SessionRemoved)
-        }
-        "SubagentStart" => {
-            let Some(agent_id) = event["agent_id"].as_str().and_then(sanitize_id) else {
-                return Ok(Outcome::Ignored);
-            };
-            let agent = HookAgent {
-                version: FORMAT_VERSION,
-                agent_type: event["agent_type"]
-                    .as_str()
-                    .unwrap_or("general-purpose")
-                    .to_owned(),
-                agent_id,
-                started_at_ms: now_ms,
-            };
-            write_json_atomic(&paths.agent_file(&session_id, &agent.agent_id), &agent)?;
-            Ok(Outcome::AgentStarted)
-        }
-        "SubagentStop" => {
-            let Some(agent_id) = event["agent_id"].as_str().and_then(sanitize_id) else {
-                return Ok(Outcome::Ignored);
-            };
-            remove_if_exists(&paths.agent_file(&session_id, &agent_id))?;
-            Ok(Outcome::AgentStopped)
-        }
+        "SessionEnd" => end_session(paths, &session_id),
+        "SubagentStart" => start_agent(paths, &session_id, &event, now_ms),
+        "SubagentStop" => stop_agent(paths, &session_id, &event),
         _ => Ok(Outcome::Ignored),
     }
+}
+
+fn end_session(paths: &Paths, session_id: &str) -> io::Result<Outcome> {
+    remove_if_exists(&paths.hook_session_file(session_id))?;
+    match fs::remove_dir_all(paths.session_agents_dir(session_id)) {
+        Err(error) if error.kind() != io::ErrorKind::NotFound => return Err(error),
+        _ => {}
+    }
+    Ok(Outcome::SessionRemoved)
+}
+
+fn start_agent(paths: &Paths, session_id: &str, event: &Value, now_ms: u64) -> io::Result<Outcome> {
+    let Some(agent_id) = event["agent_id"].as_str().and_then(sanitize_id) else {
+        return Ok(Outcome::Ignored);
+    };
+    let agent = HookAgent {
+        version: FORMAT_VERSION,
+        agent_type: event["agent_type"]
+            .as_str()
+            .unwrap_or("general-purpose")
+            .to_owned(),
+        agent_id,
+        started_at_ms: now_ms,
+    };
+    write_json_atomic(&paths.agent_file(session_id, &agent.agent_id), &agent)?;
+    Ok(Outcome::AgentStarted)
+}
+
+fn stop_agent(paths: &Paths, session_id: &str, event: &Value) -> io::Result<Outcome> {
+    let Some(agent_id) = event["agent_id"].as_str().and_then(sanitize_id) else {
+        return Ok(Outcome::Ignored);
+    };
+    remove_if_exists(&paths.agent_file(session_id, &agent_id))?;
+    Ok(Outcome::AgentStopped)
 }
 
 /// Only permission prompts mean "blocked"; idle reminders are ignored.
