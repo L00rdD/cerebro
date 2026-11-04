@@ -128,50 +128,83 @@ def wall(c: Canvas, height: int, color: str, trim: str, style: str = "plain", wa
     baseboard that casts a thin shadow on the floor."""
     r = ramp(color)
     c.rect(0, 0, W, height, r["base"])
-    if style == "stripes":
-        for x in range(0, W, 8):
-            c.vline(x + 3, 4, height, r["shadow"])
-            c.vline(x + 4, 4, height, mix(r["base"], r["shadow"], 0.5))
-    elif style == "damask":
-        for yy in range(8, height, 10):
-            for xx in range(0, W, 12):
-                ox = 6 if (yy // 10) % 2 else 0
-                cx, cy = xx + ox, yy
-                c.set(cx, cy - 2, r["shadow"])
-                c.set(cx - 1, cy, r["shadow"])
-                c.set(cx + 1, cy, r["shadow"])
-                c.set(cx, cy + 2, r["shadow"])
-                c.set(cx, cy, r["light"])
-    elif style == "bricks":
-        bricks(c, 0, 4, W, height - 4, color)
-    elif style == "tiles":
-        for yy in range(4, height, 6):
-            off = 4 if (yy // 6) % 2 else 0
-            c.hline(0, yy, W, r["shadow"])
-            for xx in range(off, W, 8):
-                c.vline(xx, yy, 6, r["shadow"])
-                c.hline(xx + 1, yy + 1, 6, r["light"])
-    elif style == "metal":
-        for xx in range(0, W, 24):
-            c.vline(xx, 0, height, r["dark"])
-            c.vline(xx + 1, 0, height, r["light"])
-            for yy in (6, height - 10):
-                c.set(xx + 4, yy, r["light"])
-                c.set(xx + 19, yy, r["light"])
-                c.set(xx + 4, yy + 1, r["dark"])
-                c.set(xx + 19, yy + 1, r["dark"])
+    pattern = WALL_PATTERNS.get(style)
+    if pattern:
+        pattern(c, height, color, r)
     # Ambient occlusion under the ceiling.
     c.dither(0, 4, W, 2, r["shadow"])
     if wainscot:
-        wr = ramp(wainscot_color or trim)
-        top = height - wainscot
-        c.rect(0, top, W, wainscot, wr["base"])
-        c.hline(0, top, W, wr["light"])
-        c.hline(0, top + 1, W, wr["base"])
-        c.hline(0, top - 1, W, wr["dark"])
-        for xx in range(4, W, 16):
-            rim(c, xx, top + 3, 12, wainscot - 7, wr["shadow"])
-            c.hline(xx + 1, top + 4, 10, wr["light"])
+        wall_wainscot(c, height, wainscot, wainscot_color or trim)
+    wall_trim(c, height, trim)
+
+
+def stripes_pattern(c: Canvas, height: int, color: str, r: dict[str, str]):
+    for x in range(0, W, 8):
+        c.vline(x + 3, 4, height, r["shadow"])
+        c.vline(x + 4, 4, height, mix(r["base"], r["shadow"], 0.5))
+
+
+def damask_pattern(c: Canvas, height: int, color: str, r: dict[str, str]):
+    for yy in range(8, height, 10):
+        for xx in range(0, W, 12):
+            ox = 6 if (yy // 10) % 2 else 0
+            cx, cy = xx + ox, yy
+            c.set(cx, cy - 2, r["shadow"])
+            c.set(cx - 1, cy, r["shadow"])
+            c.set(cx + 1, cy, r["shadow"])
+            c.set(cx, cy + 2, r["shadow"])
+            c.set(cx, cy, r["light"])
+
+
+def bricks_pattern(c: Canvas, height: int, color: str, r: dict[str, str]):
+    bricks(c, 0, 4, W, height - 4, color)
+
+
+def tiles_pattern(c: Canvas, height: int, color: str, r: dict[str, str]):
+    for yy in range(4, height, 6):
+        off = 4 if (yy // 6) % 2 else 0
+        c.hline(0, yy, W, r["shadow"])
+        for xx in range(off, W, 8):
+            c.vline(xx, yy, 6, r["shadow"])
+            c.hline(xx + 1, yy + 1, 6, r["light"])
+
+
+def metal_pattern(c: Canvas, height: int, color: str, r: dict[str, str]):
+    for xx in range(0, W, 24):
+        c.vline(xx, 0, height, r["dark"])
+        c.vline(xx + 1, 0, height, r["light"])
+        for yy in (6, height - 10):
+            c.set(xx + 4, yy, r["light"])
+            c.set(xx + 19, yy, r["light"])
+            c.set(xx + 4, yy + 1, r["dark"])
+            c.set(xx + 19, yy + 1, r["dark"])
+
+
+# Wall styles other than "plain".
+WALL_PATTERNS = {
+    "stripes": stripes_pattern,
+    "damask": damask_pattern,
+    "bricks": bricks_pattern,
+    "tiles": tiles_pattern,
+    "metal": metal_pattern,
+}
+
+
+def wall_wainscot(c: Canvas, height: int, wainscot: int, color: str):
+    """Paneling on the lower `wainscot` pixels of the wall."""
+    wr = ramp(color)
+    top = height - wainscot
+    c.rect(0, top, W, wainscot, wr["base"])
+    c.hline(0, top, W, wr["light"])
+    c.hline(0, top + 1, W, wr["base"])
+    c.hline(0, top - 1, W, wr["dark"])
+    for xx in range(4, W, 16):
+        rim(c, xx, top + 3, 12, wainscot - 7, wr["shadow"])
+        c.hline(xx + 1, top + 4, 10, wr["light"])
+
+
+def wall_trim(c: Canvas, height: int, trim: str):
+    """Crown molding and baseboard."""
     tr = ramp(trim)
     # Crown molding.
     c.rect(0, 0, W, 4, tr["base"])
@@ -659,31 +692,11 @@ def danger_room(c: Canvas):
             c.line(96 + (x - 96) * 2 // 3, 41, x, H, glow, pulse)
         for y in DR_ROWS:
             c.hline(0, y, W, glow, pulse)
-        # Wireframe obstacles flickering in and out.
-        for i, (hx, hy, s_) in enumerate(((42, 60, 10), (152, 58, 9), (104, 52, 7))):
-            a = 0.35 + 0.35 * wave(t, 1, i / 3)
-            if wave(t, 4, i * 0.2) > 0.85:
-                continue
-            pts = [(hx - s_, hy), (hx, hy - s_ // 2), (hx + s_, hy), (hx, hy + s_ // 2)]
-            top = [(px, py - s_ * 2) for px, py in pts]
-            for (ax, ay), (bx, by) in zip(pts, pts[1:] + pts[:1]):
-                c.line(ax, ay, bx, by, glow, a)
-            for (ax, ay), (bx, by) in zip(top, top[1:] + top[:1]):
-                c.line(ax, ay, bx, by, glow, a)
-            for (ax, ay), (bx, by) in zip(pts, top):
-                c.line(ax, ay, bx, by, glow, a)
+        danger_room_obstacles(c, t, glow)
         sy = 41 + round((H - 41) * t)
         c.hline(0, sy, W, "#B8FAFF", 0.5)
         c.hline(0, sy - 1, W, glow, 0.25)
-        # Turret lights and tracking lasers.
-        for i, tx in enumerate((22, 162)):
-            on = wave(t, 4, i * 0.5) > 0
-            c.set(tx + 5, 28, "#FF3A3A" if on else "#7A1A1A")
-            c.set(tx + 6, 28, "#FF3A3A" if on else "#7A1A1A")
-            aim = 96 + round(70 * wave(t, 1, i * 0.5))
-            if wave(t, 2, i * 0.25) > 0.3:
-                c.line(tx + 6, 29, aim, 100, "#FF4A4A", 0.55)
-                c.ellipse(aim, 100, 2, 1, "#FF8A8A", 0.7)
+        danger_room_turrets(c, t)
         # Control booth silhouettes blinking consoles.
         for i in range(8):
             if wave(t, 2, i * 0.13) > 0:
@@ -696,6 +709,34 @@ def danger_room(c: Canvas):
         c.ellipse(96, 3, 3, 2, "#FF3A3A" if wave(t, 2) > 0 else "#5A1A1A")
 
     return animate
+
+
+def danger_room_obstacles(c: Canvas, t: float, glow: str):
+    """Wireframe obstacles flickering in and out."""
+    for i, (hx, hy, s_) in enumerate(((42, 60, 10), (152, 58, 9), (104, 52, 7))):
+        a = 0.35 + 0.35 * wave(t, 1, i / 3)
+        if wave(t, 4, i * 0.2) > 0.85:
+            continue
+        pts = [(hx - s_, hy), (hx, hy - s_ // 2), (hx + s_, hy), (hx, hy + s_ // 2)]
+        top = [(px, py - s_ * 2) for px, py in pts]
+        for (ax, ay), (bx, by) in zip(pts, pts[1:] + pts[:1]):
+            c.line(ax, ay, bx, by, glow, a)
+        for (ax, ay), (bx, by) in zip(top, top[1:] + top[:1]):
+            c.line(ax, ay, bx, by, glow, a)
+        for (ax, ay), (bx, by) in zip(pts, top):
+            c.line(ax, ay, bx, by, glow, a)
+
+
+def danger_room_turrets(c: Canvas, t: float):
+    """Turret lights and tracking lasers."""
+    for i, tx in enumerate((22, 162)):
+        on = wave(t, 4, i * 0.5) > 0
+        c.set(tx + 5, 28, "#FF3A3A" if on else "#7A1A1A")
+        c.set(tx + 6, 28, "#FF3A3A" if on else "#7A1A1A")
+        aim = 96 + round(70 * wave(t, 1, i * 0.5))
+        if wave(t, 2, i * 0.25) > 0.3:
+            c.line(tx + 6, 29, aim, 100, "#FF4A4A", 0.55)
+            c.ellipse(aim, 100, 2, 1, "#FF8A8A", 0.7)
 
 
 @room("hangar", "Blackbird Hangar", (10, 82, 172, 34), frames=16)
@@ -721,45 +762,61 @@ def hangar(c: Canvas):
         c.hline(x + 1, 47, 10, "#8A2A1E")
     block(c, 20, 44, 8, 8, 3, "#3A6A9A")
     block(c, 164, 44, 6, 8, 3, "#3A6A9A")
+    blackbird(c)
+    return hangar_lights
 
-    # The Blackbird, top-down and foreshortened: long chined nose blending into a delta
-    # wing, two engine nacelles with their inlet spikes and inward-canted fins.
-    cx, cy, x0, x1 = 96, 56, 26, 170
-    squash = 0.62
-    nacelle = 17
 
-    def half_width(x: int) -> float:
-        u = (x - x0) / (x1 - x0)
-        body = 1 + 6 * min(1.0, u / 0.5) ** 0.7
-        if u > 0.85:
-            body = max(3, body - (u - 0.85) * 30)
-        wing = 0.0
-        if 0.4 < u < 0.93:
-            wing = 36 * min(1.0, (u - 0.4) / 0.32) ** 0.9
-        return max(body, wing)
+# The Blackbird, top-down and foreshortened: long chined nose blending into a delta
+# wing, two engine nacelles with their inlet spikes and inward-canted fins.
+BB_CX, BB_CY, BB_X0, BB_X1 = 96, 56, 26, 170
+BB_SQUASH = 0.62
+BB_NACELLE = 17
 
+
+def blackbird_half_width(x: int) -> float:
+    u = (x - BB_X0) / (BB_X1 - BB_X0)
+    body = 1 + 6 * min(1.0, u / 0.5) ** 0.7
+    if u > 0.85:
+        body = max(3, body - (u - 0.85) * 30)
+    wing = 0.0
+    if 0.4 < u < 0.93:
+        wing = 36 * min(1.0, (u - 0.4) / 0.32) ** 0.9
+    return max(body, wing)
+
+
+def blackbird_nacelle_y(side: int) -> int:
+    return BB_CY + round(side * BB_NACELLE * BB_SQUASH)
+
+
+def blackbird(c: Canvas):
+    cx, cy, x0, x1 = BB_CX, BB_CY, BB_X0, BB_X1
     oval_shadow(c, cx + 14, cy + 20, 64, 7, 0.32)
     jet = Canvas(W, H)
     upper, lower = "#2E313C", "#1F2129"
     for x in range(x0, x1):
-        hw = round(half_width(x) * squash)
+        hw = round(blackbird_half_width(x) * BB_SQUASH)
         jet.vline(x, cy - hw, hw, upper)
         jet.vline(x, cy, hw + 1, lower)
     for side in (-1, 1):
-        ny = cy + round(side * nacelle * squash)
+        ny = blackbird_nacelle_y(side)
         for x in range(100, x1 + 3):
             hw = 2 if x < 106 or x >= x1 - 1 else 3
             jet.rect(x, ny - hw + 1, 1, hw * 2 - 1, upper if side < 0 else lower)
         jet.hline(95, ny, 5, "#3A3E4A")
     jet.outline("#0B0C10")
     c.blit(jet, 0, 0)
-    # Spine highlight, cockpit, engine detail.
+    blackbird_details(c)
+
+
+def blackbird_details(c: Canvas):
+    """Spine highlight, cockpit, engine detail, fins and the X roundels."""
+    cy, x0, x1 = BB_CY, BB_X0, BB_X1
     c.hline(x0 + 8, cy - 1, 110, "#3E4352")
     c.hline(x0 + 14, cy - 2, 50, "#4A5060")
     c.rect(48, cy - 1, 9, 2, "#4A6A8A")
     c.hline(49, cy - 1, 6, "#A8D0F0")
     for side in (-1, 1):
-        ny = cy + round(side * nacelle * squash)
+        ny = blackbird_nacelle_y(side)
         c.hline(104, ny - 1, x1 - 104, "#40444F")
         c.vline(x1 + 2, ny - 1, 3, "#5A4A3A")
         # Fins, canted towards the fuselage.
@@ -768,32 +825,32 @@ def hangar(c: Canvas):
             c.set(146 + k, ny - side * (k // 4) + side, "#16171D")
     # White X roundels on both wings.
     for side in (-1, 1):
-        wy = cy + round(side * 26 * squash) - 2
+        wy = cy + round(side * 26 * BB_SQUASH) - 2
         for k in range(5):
             c.set(124 + k, wy + k, "#D0D4E0")
             c.set(128 - k, wy + k, "#D0D4E0")
 
-    def animate(c: Canvas, t: float):
-        # Navigation lights on the wing tips and the nose.
-        on = int(t * 16) % 8 < 2
-        tip = round(34 * squash)
-        c.set(140, cy - tip, "#FF3A3A" if on else "#5A1A1A")
-        c.set(140, cy + tip, "#3AFF6A" if on else "#1A5A2A")
-        c.set(x0, cy, "#FFFFFF" if int(t * 16) % 4 == 0 else "#7A7A80")
-        # Rotating amber beacons above the door.
-        for i, bx in enumerate((40, 152)):
-            c.rect(bx - 3, 12, 7, 3, "#2A2D3A")
-            a = wave(t, 2, i * 0.25)
-            c.ellipse(bx, 10, 3, 3, "#FFB43A" if a > 0 else "#7A4A1A")
-            if a > 0:
-                c.ellipse(bx, 10, 9, 6, "#FFB43A", 0.12)
-        # Heat shimmer behind the engines.
-        for side in (-1, 1):
-            ny = cy + round(side * nacelle * squash)
-            for k in range(3):
-                c.set(x1 + 5 + k * 2, ny + round(wave(t, 4, k * 0.3)), "#9AA0B0", 0.5)
 
-    return animate
+def hangar_lights(c: Canvas, t: float):
+    cy, x0, x1 = BB_CY, BB_X0, BB_X1
+    # Navigation lights on the wing tips and the nose.
+    on = int(t * 16) % 8 < 2
+    tip = round(34 * BB_SQUASH)
+    c.set(140, cy - tip, "#FF3A3A" if on else "#5A1A1A")
+    c.set(140, cy + tip, "#3AFF6A" if on else "#1A5A2A")
+    c.set(x0, cy, "#FFFFFF" if int(t * 16) % 4 == 0 else "#7A7A80")
+    # Rotating amber beacons above the door.
+    for i, bx in enumerate((40, 152)):
+        c.rect(bx - 3, 12, 7, 3, "#2A2D3A")
+        a = wave(t, 2, i * 0.25)
+        c.ellipse(bx, 10, 3, 3, "#FFB43A" if a > 0 else "#7A4A1A")
+        if a > 0:
+            c.ellipse(bx, 10, 9, 6, "#FFB43A", 0.12)
+    # Heat shimmer behind the engines.
+    for side in (-1, 1):
+        ny = blackbird_nacelle_y(side)
+        for k in range(3):
+            c.set(x1 + 5 + k * 2, ny + round(wave(t, 4, k * 0.3)), "#9AA0B0", 0.5)
 
 
 @room("cerebro", "Cerebro", (58, 66, 76, 34), frames=16)

@@ -761,29 +761,47 @@ def jacket(region: str = "jacket", length: int = 18, open_front: bool = True, sl
             if not span:
                 continue
             x0, x1 = span
-            if f.direction == "back":
-                cols = range(x0, x1 + 1)
-            elif f.direction == "side":
-                cols = range(x0, x1 + 1) if y < 17 else range(x0 - (y - 16), x1 + 1)
-            else:
-                cols = [x for x in range(x0, x1 + 1) if not open_front or x < x0 + 2 or x > x1 - 2]
-                if y >= 17:
-                    cols = [x0 - 1, x0, x1, x1 + 1]
-            for x in cols:
+            for x in _jacket_cols(f, y, x0, x1, open_front):
                 c = f.get(x, y)
-                if y >= 17 or c is None:
-                    if c is None and y >= 17 and f.direction != "back" and f.direction != "side" and x not in (x0 - 1, x1 + 1):
-                        continue
-                tone = "shadow" if (f.direction != "side" and x >= (x0 + x1) // 2 + 2) or (c and c.tone == "shadow") else "base"
-                f.put(x, y, region, tone)
+                if _skirt_gap(f, c, x, y, x0, x1):
+                    continue
+                f.put(x, y, region, _jacket_tone(f, c, x, x0, x1))
         if f.direction == "front":
-            # Collar.
-            for x in range(PAD + 4, PAD + 6):
-                f.put(x, 11, region, "light")
-            for x in range(PAD + 10, PAD + 12):
-                f.put(x, 11, region, "base")
+            _collar(f, region)
 
     return apply
+
+
+def _jacket_cols(f: Frame, y: int, x0: int, x1: int, open_front: bool):
+    """Columns the jacket covers on row y, the body spanning x0..x1. Below the belt it
+    flares out on the side view and only its two front panels show from the front."""
+    if f.direction == "back":
+        return range(x0, x1 + 1)
+    if f.direction == "side":
+        return range(x0, x1 + 1) if y < 17 else range(x0 - (y - 16), x1 + 1)
+    if y >= 17:
+        return [x0 - 1, x0, x1, x1 + 1]
+    return [x for x in range(x0, x1 + 1) if not open_front or x < x0 + 2 or x > x1 - 2]
+
+
+def _skirt_gap(f: Frame, c, x: int, y: int, x0: int, x1: int) -> bool:
+    """From the front, the panels below the belt don't fill the empty cells between the legs."""
+    if c is not None or y < 17 or f.direction in ("back", "side"):
+        return False
+    return x not in (x0 - 1, x1 + 1)
+
+
+def _jacket_tone(f: Frame, c, x: int, x0: int, x1: int) -> str:
+    if f.direction != "side" and x >= (x0 + x1) // 2 + 2:
+        return "shadow"
+    return "shadow" if c and c.tone == "shadow" else "base"
+
+
+def _collar(f: Frame, region: str):
+    for x in range(PAD + 4, PAD + 6):
+        f.put(x, 11, region, "light")
+    for x in range(PAD + 10, PAD + 12):
+        f.put(x, 11, region, "base")
 
 
 def cape(region: str = "cape", collar: bool = True):
@@ -791,34 +809,46 @@ def cape(region: str = "cape", collar: bool = True):
 
     def apply(f: Frame, look):
         if f.direction == "back":
-            for y in range(11, 23):
-                spread = min(3, (y - 10) // 3)
-                x0, x1 = PAD + 3 - spread, PAD + 13 + spread
-                for x in range(x0, x1 + 1):
-                    if y == 22 and (x + f.frame) % 3 == 0:
-                        continue
-                    tone = "shadow" if x >= x1 - 1 or (x - x0) % 4 == 3 else ("light" if x == x0 else "base")
-                    f.put(x, y, region, tone)
+            _cape_from_behind(f, region)
         elif f.direction == "front":
-            for y in range(11, 22):
-                spread = min(3, (y - 10) // 3)
-                for x in (PAD + 2 - spread + 1, PAD + 14 + spread - 1):
-                    f.put(x, y, region, "shadow") if f.get(x, y) is None else None
-                for x in (PAD + 2 - spread, PAD + 14 + spread):
-                    if f.get(x, y) is None:
-                        f.put(x, y, region, "shadow")
-            if collar:
-                f.put(PAD + 3, 10, region, "base")
-                f.put(PAD + 12, 10, region, "shadow")
+            _cape_from_the_front(f, region, collar)
         else:
-            sway = 1 if f.frame in (1, 3) else 0
-            for y in range(11, 22):
-                back = min(4, (y - 10) // 2) + (sway if y > 15 else 0)
-                for x in range(PAD + 5 - back, PAD + 6):
-                    if f.get(x, y) is None:
-                        f.put(x, y, region, "shadow" if x == PAD + 5 - back else "base")
+            _cape_from_the_side(f, region)
 
     return apply
+
+
+def _cape_from_behind(f: Frame, region: str):
+    for y in range(11, 23):
+        spread = min(3, (y - 10) // 3)
+        x0, x1 = PAD + 3 - spread, PAD + 13 + spread
+        for x in range(x0, x1 + 1):
+            if y == 22 and (x + f.frame) % 3 == 0:
+                continue
+            tone = "shadow" if x >= x1 - 1 or (x - x0) % 4 == 3 else ("light" if x == x0 else "base")
+            f.put(x, y, region, tone)
+
+
+def _cape_from_the_front(f: Frame, region: str, collar: bool):
+    for y in range(11, 22):
+        spread = min(3, (y - 10) // 3)
+        for x in (PAD + 2 - spread + 1, PAD + 14 + spread - 1):
+            f.put(x, y, region, "shadow") if f.get(x, y) is None else None
+        for x in (PAD + 2 - spread, PAD + 14 + spread):
+            if f.get(x, y) is None:
+                f.put(x, y, region, "shadow")
+    if collar:
+        f.put(PAD + 3, 10, region, "base")
+        f.put(PAD + 12, 10, region, "shadow")
+
+
+def _cape_from_the_side(f: Frame, region: str):
+    sway = 1 if f.frame in (1, 3) else 0
+    for y in range(11, 22):
+        back = min(4, (y - 10) // 2) + (sway if y > 15 else 0)
+        for x in range(PAD + 5 - back, PAD + 6):
+            if f.get(x, y) is None:
+                f.put(x, y, region, "shadow" if x == PAD + 5 - back else "base")
 
 
 def wings(region: str = "wing", metal: bool = False):
@@ -930,22 +960,29 @@ def claws(region: str = "claw"):
         bottom = max(y for _, y, _ in hands)
         cols = sorted({x for x, y, _ in hands if y == bottom})
         if f.direction == "side":
-            x = max(cols)
-            for i in range(3):
-                f.put(x + 1 + i, bottom - 1 - i, region, "light" if i == 2 else "base")
-                f.put(x + i, bottom - 1 - i, region, "base") if i == 0 else None
-            return
-        left = [x for x in cols if x < WIDTH // 2]
-        right = [x for x in cols if x >= WIDTH // 2]
-        for group in (left, right):
-            if not group:
-                continue
-            for x in group[:2]:
-                for dy in range(1, 4):
-                    if f.get(x, bottom + dy) is None:
-                        f.put(x, bottom + dy, region, "light" if dy == 3 else "base")
+            _side_claws(f, region, max(cols), bottom)
+        else:
+            _front_claws(f, region, cols, bottom)
 
     return apply
+
+
+def _side_claws(f: Frame, region: str, x: int, bottom: int):
+    """Blades pointing forward and up from the fist at (x, bottom)."""
+    for i in range(3):
+        f.put(x + 1 + i, bottom - 1 - i, region, "light" if i == 2 else "base")
+        f.put(x + i, bottom - 1 - i, region, "base") if i == 0 else None
+
+
+def _front_claws(f: Frame, region: str, cols: list[int], bottom: int):
+    """Blades hanging down from each fist, `cols` being the bottom row of both hands."""
+    left = [x for x in cols if x < WIDTH // 2]
+    right = [x for x in cols if x >= WIDTH // 2]
+    for group in (left, right):
+        for x in group[:2]:
+            for dy in range(1, 4):
+                if f.get(x, bottom + dy) is None:
+                    f.put(x, bottom + dy, region, "light" if dy == 3 else "base")
 
 
 def big_hands(region: str = "hand"):

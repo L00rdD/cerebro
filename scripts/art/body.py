@@ -276,6 +276,14 @@ class Frame:
 
     def _widen(self):
         """Big build: torso, arms and legs one pixel wider on each side, shoulders raised."""
+        new = self._spread_from_center()
+        self._fill_seam(new)
+        self._raise_shoulders(new)
+        self.cells = new
+
+    def _spread_from_center(self) -> list[list[Cell | None]]:
+        """Copy of the cells where everything below the head moves one pixel away from the
+        middle, leaving a seam there."""
         center = WIDTH // 2
         new = [[None] * WIDTH for _ in range(HEIGHT)]
         for y in range(HEIGHT):
@@ -286,29 +294,32 @@ class Frame:
                 if y < 11:
                     new[y][x] = c
                     continue
-                shift = -1 if x < center else 1
-                if y >= 17:
-                    shift = -1 if x < center else 1
-                nx = x + shift
+                nx = x + (-1 if x < center else 1)
                 if 0 <= nx < WIDTH:
                     new[y][nx] = c
-        # Fill the seam the shift opened in the middle.
+        return new
+
+    def _fill_seam(self, new: list[list[Cell | None]]):
+        """Fill the seam the shift opened in the middle."""
+        center = WIDTH // 2
         for y in range(11, HEIGHT):
             l, r = new[y][center - 2], new[y][center + 1]
-            if l and r:
-                for x in (center - 1, center):
-                    if new[y][x] is None:
-                        src = self.cells[y][x] or l
-                        new[y][x] = Cell(src.region, src.tone)
-        # Bulkier shoulders.
-        for y in (11,):
-            row = new[y]
-            xs = [x for x in range(WIDTH) if row[x]]
-            if xs and self.direction != "side":
-                for x in (xs[0] - 1, xs[-1] + 1):
-                    if 0 <= x < WIDTH:
-                        new[y + 1][x] = new[y + 1][x] or Cell("arm", "base")
-        self.cells = new
+            if not (l and r):
+                continue
+            for x in (center - 1, center):
+                if new[y][x] is None:
+                    src = self.cells[y][x] or l
+                    new[y][x] = Cell(src.region, src.tone)
+
+    def _raise_shoulders(self, new: list[list[Cell | None]]):
+        """Bulkier shoulders: one more arm pixel on each side, under the shoulder line."""
+        y = 11
+        xs = [x for x in range(WIDTH) if new[y][x]]
+        if not xs or self.direction == "side":
+            return
+        for x in (xs[0] - 1, xs[-1] + 1):
+            if 0 <= x < WIDTH:
+                new[y + 1][x] = new[y + 1][x] or Cell("arm", "base")
 
     # --- editing helpers -----------------------------------------------------------------
 
