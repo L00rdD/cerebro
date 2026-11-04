@@ -68,18 +68,7 @@ function drawActor(
   const sprite = (feetX: number, feetY: number, alpha: number) =>
     drawSprite(ctx, asset, size, pose, feetX, feetY, alpha);
 
-  // The shadow stays on the floor and shrinks as the character rises.
-  ctx.globalAlpha = pose.alpha;
-  ctx.fillStyle = "rgba(20, 12, 30, 0.28)";
-  const shadow = lift > 0 ? 12 : 18;
-  ctx.fillRect(x - shadow / 2, pose.y, shadow, 2);
-  ctx.fillRect(x - shadow / 2 + 2, pose.y + 2, shadow - 4, 1);
-
-  if (asset.aura) {
-    ctx.globalAlpha = pose.alpha * (0.18 + 0.08 * Math.sin(seconds * 3 + pose.x));
-    pixelDisc(ctx, x, pose.y - lift - 15, 16, asset.aura);
-  }
-  ctx.globalAlpha = 1;
+  drawGround(ctx, asset.aura, pose, x, lift, seconds);
 
   if (pose.travel && asset.move === "dash") drawAfterimages(pose, sprite);
 
@@ -101,12 +90,33 @@ function drawActor(
     ghost: (gx, gy, alpha) => sprite(gx, gy, alpha),
   });
 
-  if (actor.state === "asleep") {
+  drawStateEmote(ctx, catalog, actor.state, x, top, seconds);
+}
+
+/** The shadow, and the aura of characters that have one, under the character. */
+function drawGround(ctx: CanvasRenderingContext2D, aura: string | undefined, pose: Pose, x: number, lift: number, seconds: number) {
+  // The shadow stays on the floor and shrinks as the character rises.
+  ctx.globalAlpha = pose.alpha;
+  ctx.fillStyle = "rgba(20, 12, 30, 0.28)";
+  const shadow = lift > 0 ? 12 : 18;
+  ctx.fillRect(x - shadow / 2, pose.y, shadow, 2);
+  ctx.fillRect(x - shadow / 2 + 2, pose.y + 2, shadow - 4, 1);
+
+  if (aura) {
+    ctx.globalAlpha = pose.alpha * (0.18 + 0.08 * Math.sin(seconds * 3 + pose.x));
+    pixelDisc(ctx, x, pose.y - lift - 15, 16, aura);
+  }
+  ctx.globalAlpha = 1;
+}
+
+/** Sleeping characters snore, alert ones blink an exclamation mark above their head. */
+function drawStateEmote(ctx: CanvasRenderingContext2D, catalog: Catalog, state: ActorState, x: number, top: number, seconds: number) {
+  if (state === "asleep") {
     const rise = Math.floor(seconds * 2) % 4;
     ctx.globalAlpha = 1 - rise * 0.2;
     drawEmote(ctx, catalog, 0, x + 3, top - 2 - rise);
     ctx.globalAlpha = 1;
-  } else if (actor.state === "alert" && Math.floor(seconds * 3) % 2 === 0) {
+  } else if (state === "alert" && Math.floor(seconds * 3) % 2 === 0) {
     drawEmote(ctx, catalog, 1, x - Math.floor(EMOTE_SIZE / 2), top - EMOTE_SIZE);
   }
 }

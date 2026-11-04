@@ -79,15 +79,28 @@ function hover(seed: number, seconds: number): number {
   return 8 + Math.round(Math.sin(seconds * 3 + (seed % 7)) * 2);
 }
 
-export function poseAt(actorId: string, area: Rect, seconds: number, walking: boolean, movement: Movement = "walk"): Pose {
-  const seed = hash32(actorId);
-  const point = (k: number) => ({
+/** One leg of the walk: from waypoint `k` to waypoint `k + 1`. */
+interface Leg {
+  seed: number;
+  k: number;
+  from: Point;
+  to: Point;
+  seconds: number;
+}
+
+/** Waypoint `k` of the actor, anywhere in its walk area. */
+function waypoint(seed: number, area: Rect, k: number): Point {
+  return {
     x: area.x + unit(seed, k * 2) * area.width,
     y: area.y + unit(seed, k * 2 + 1) * area.height,
-  });
+  };
+}
+
+export function poseAt(actorId: string, area: Rect, seconds: number, walking: boolean, movement: Movement = "walk"): Pose {
+  const seed = hash32(actorId);
 
   if (!walking) {
-    const home = point(0);
+    const home = waypoint(seed, area, 0);
     return { x: Math.floor(home.x), y: Math.floor(home.y), facing: "front", flip: false, frame: 0, lift: 0, alpha: 1 };
   }
 
@@ -96,46 +109,62 @@ export function poseAt(actorId: string, area: Rect, seconds: number, walking: bo
   const clock = seconds / legSeconds + unit(seed, 998) * 100;
   const k = Math.floor(clock);
   const progress = clock - k;
-  const from = point(k);
-  const to = point(k + 1);
+  const leg: Leg = { seed, k, from: waypoint(seed, area, k), to: waypoint(seed, area, k + 1), seconds };
+
+  if (progress >= share) return pausePose(leg, movement === "fly", (progress - share) / (1 - share));
+  if (movement === "teleport") return teleportPose(leg, progress / share);
+  return movingPose(leg, movement, progress / share);
+}
+
+/** Standing at the waypoint just reached, maybe using a power. */
+function pausePose(leg: Leg, flying: boolean, pause: number): Pose {
+  const { seed, k, from, to, seconds } = leg;
+  const flip = to.x - from.x < 0;
+  return {
+    x: Math.floor(to.x),
+    y: Math.floor(to.y),
+    facing: "front",
+    flip,
+    frame: 0,
+    lift: flying ? hover(seed, seconds) : 0,
+    alpha: 1,
+    cast: castAt(seed, k, pause),
+  };
+}
+
+/** Most pauses are spent using the character's power; `leg` tells the casts apart. */
+function castAt(seed: number, leg: number, progress: number): Pose["cast"] {
+  if (unit(seed, 5000 + leg) >= CAST_CHANCE) return undefined;
+  return { leg, progress };
+}
+
+/** Fade out where it stands, vanish, then fade in at the destination. */
+function teleportPose(leg: Leg, u: number): Pose {
+  const { from, to } = leg;
+  const at = u < 0.5 ? from : to;
+  const alpha = u < 0.3 ? 1 - u / 0.3 : u > 0.7 ? (u - 0.7) / 0.3 : 0;
+  const flip = to.x - from.x < 0;
+  return { x: Math.floor(at.x), y: Math.floor(at.y), facing: "front", flip, frame: 0, lift: 0, alpha, travel: { from, to, progress: u } };
+}
+
+/** On the way between two waypoints, walking, flying, dashing or phasing. */
+function movingPose(leg: Leg, movement: Movement, u: number): Pose {
+  const { seed, from, to, seconds } = leg;
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const flying = movement === "fly";
-
-  if (progress >= share) {
-    return {
-      x: Math.floor(to.x),
-      y: Math.floor(to.y),
-      facing: "front",
-      flip: dx < 0,
-      frame: 0,
-      lift: flying ? hover(seed, seconds) : 0,
-      alpha: 1,
-      cast: unit(seed, 5000 + k) < CAST_CHANCE ? { leg: k, progress: (progress - share) / (1 - share) } : undefined,
-    };
-  }
-
-  const u = progress / share;
-  const travel = { from, to, progress: u };
-
-  if (movement === "teleport") {
-    // Fade out where it stands, vanish, then fade in at the destination.
-    const at = u < 0.5 ? from : to;
-    const alpha = u < 0.3 ? 1 - u / 0.3 : u > 0.7 ? (u - 0.7) / 0.3 : 0;
-    return { x: Math.floor(at.x), y: Math.floor(at.y), facing: "front", flip: dx < 0, frame: 0, lift: 0, alpha, travel };
-  }
-
   const stepsPerSecond = movement === "dash" ? 16 : 8;
   // The floor is seen at an angle: vertical moves count double when picking a facing.
   const vertical = Math.abs(dy) * 2 > Math.abs(dx);
+  const flip = dx < 0;
   return {
     x: Math.floor(from.x + dx * u),
     y: Math.floor(from.y + dy * u),
     facing: vertical ? (dy < 0 ? "back" : "front") : "side",
-    flip: dx < 0,
+    flip,
     frame: flying ? 0 : WALK_CYCLE[Math.floor(seconds * stepsPerSecond) % WALK_CYCLE.length]!,
     lift: flying ? hover(seed, seconds) + 3 : 0,
     alpha: movement === "phase" ? 0.45 : 1,
-    travel,
+    travel: { from, to, progress: u },
   };
 }
