@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use cerebro_domain::ports::NetworkStatus;
 use cerebro_domain::usecases::NetworkCheck;
-use cerebro_web::{AccessKey, Asset, Assets, DEFAULT_PORT, WebServer};
+use cerebro_web::{AccessKey, Asset, Assets, DEFAULT_PORT, Publisher, WebServer};
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::dto::{MobileDto, NetworkDto};
@@ -42,18 +42,7 @@ async fn supervise(app: AppHandle) {
         Ok(key) => key,
         Err(error) => {
             let message = format!("cannot create the phone link key: {error}");
-            let networks = check_networks(&app)
-                .await
-                .into_iter()
-                .map(|check| NetworkDto {
-                    id: check.id,
-                    name: check.name,
-                    state: "error",
-                    urls: Vec::new(),
-                    message: Some(message.clone()),
-                })
-                .collect();
-            publish(&app, &MobileDto { networks });
+            publish_key_error(&app, &message).await;
             return;
         }
     };
@@ -64,28 +53,8 @@ async fn supervise(app: AppHandle) {
     loop {
         let mut networks = Vec::new();
         for check in check_networks(&app).await {
-            let wanted = addresses(&check);
-            let current = servers
-                .get(check.id)
-                .map(|running| running.addresses().to_vec())
-                .unwrap_or_default();
-            let mut server_error = None;
-            if wanted != current {
-                // Dropping the old server closes its listeners and event streams.
-                servers.remove(check.id);
-                if !wanted.is_empty() {
-                    match WebServer::start(&wanted, &state.publisher, assets.clone(), key.clone())
-                        .await
-                    {
-                        Ok(started) => {
-                            servers.insert(check.id, started);
-                        }
-                        Err(error) => {
-                            server_error = Some(format!("cannot serve the phone page: {error}"));
-                        }
-                    }
-                }
-            }
+            let server_error =
+                sync_server(&mut servers, &check, &state.publisher, &assets, &key).await;
             let served_on = servers.get(check.id).map_or(&[][..], WebServer::addresses);
             networks.push(NetworkDto::new(&check, served_on, &key, server_error));
         }
@@ -95,6 +64,57 @@ async fn supervise(app: AppHandle) {
             () = tokio::time::sleep(CHECK_INTERVAL) => {}
             () = state.mobile_recheck.notified() => {}
         }
+    }
+}
+
+/// Without a key no link can be made: every network shows the error.
+async fn publish_key_error(app: &AppHandle, message: &str) {
+    let networks = check_networks(app)
+        .await
+        .into_iter()
+        .map(|check| key_error(check, message))
+        .collect();
+    publish(app, &MobileDto { networks });
+}
+
+fn key_error(check: NetworkCheck, message: &str) -> NetworkDto {
+    NetworkDto {
+        id: check.id,
+        name: check.name,
+        state: "error",
+        urls: Vec::new(),
+        message: Some(message.to_owned()),
+    }
+}
+
+/// Starts, moves or stops the server of one network so that it listens on the network's
+/// current addresses. Returns why it could not start, if it could not.
+async fn sync_server(
+    servers: &mut HashMap<&'static str, WebServer>,
+    check: &NetworkCheck,
+    publisher: &Publisher,
+    assets: &Arc<dyn Assets>,
+    key: &AccessKey,
+) -> Option<String> {
+    let wanted = addresses(check);
+    let current = servers
+        .get(check.id)
+        .map(|running| running.addresses().to_vec())
+        .unwrap_or_default();
+    if wanted == current {
+        return None;
+    }
+    // Dropping the old server closes its listeners and event streams.
+    servers.remove(check.id);
+    if wanted.is_empty() {
+        return None;
+    }
+    match WebServer::start(&wanted, publisher, assets.clone(), key.clone()).await {
+        Ok(started) => {
+            servers.insert(check.id, started);
+            None
+        }
+        Err(error) => Some(format!("cannot serve the phone page: {error}")),
     }
 }
 
@@ -120,5 +140,47 @@ fn addresses(check: &NetworkCheck) -> Vec<SocketAddr> {
 fn publish(app: &AppHandle, mobile: &MobileDto) {
     if app.state::<AppState>().replace_mobile(mobile.clone()) {
         let _ = app.emit("mobile", mobile);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::net::{IpAddr, Ipv4Addr};
+
+    use cerebro_domain::error::DomainError;
+
+    use super::*;
+
+    fn check(status: Option<Result<NetworkStatus, DomainError>>) -> NetworkCheck {
+        NetworkCheck {
+            id: "local",
+            name: "Local network".into(),
+            status,
+        }
+    }
+
+    #[test]
+    fn servers_listen_only_on_online_networks() {
+        let ip = IpAddr::V4(Ipv4Addr::new(192, 168, 1, 20));
+        assert_eq!(
+            addresses(&check(Some(Ok(NetworkStatus::Online(vec![ip]))))),
+            vec![SocketAddr::new(ip, DEFAULT_PORT)]
+        );
+        assert_eq!(addresses(&check(Some(Ok(NetworkStatus::Offline)))), []);
+        assert_eq!(addresses(&check(None)), []);
+    }
+
+    #[test]
+    fn a_missing_key_shows_as_an_error_on_every_network() {
+        assert_eq!(
+            key_error(check(None), "no key"),
+            NetworkDto {
+                id: "local",
+                name: "Local network".into(),
+                state: "error",
+                urls: Vec::new(),
+                message: Some("no key".into()),
+            }
+        );
     }
 }

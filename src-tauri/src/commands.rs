@@ -23,24 +23,26 @@ pub fn get_snapshot(app: AppHandle, state: State<'_, AppState>) -> Option<Snapsh
 #[tauri::command]
 pub async fn focus_session(app: AppHandle, session_id: String) -> Result<FocusDto, String> {
     // AppleScript can take a while (or wait for a permission prompt): keep it off the UI thread.
-    tauri::async_runtime::spawn_blocking(move || {
-        let state = app.state::<AppState>();
-        let scene = state
-            .scene(&session_id)
-            .ok_or_else(|| format!("unknown session {session_id}"))?;
-        let outcome = state
-            .container
-            .focus
-            .execute(&scene.session)
-            .map_err(|error| error.to_string())?;
-        let dto = FocusDto::from(outcome);
-        if !matches!(dto, FocusDto::NotFound) {
-            panel::hide(&app);
-        }
-        Ok(dto)
-    })
-    .await
-    .map_err(|error| error.to_string())?
+    tauri::async_runtime::spawn_blocking(move || focus(&app, &session_id))
+        .await
+        .map_err(|error| error.to_string())?
+}
+
+fn focus(app: &AppHandle, session_id: &str) -> Result<FocusDto, String> {
+    let state = app.state::<AppState>();
+    let scene = state
+        .scene(session_id)
+        .ok_or_else(|| format!("unknown session {session_id}"))?;
+    let outcome = state
+        .container
+        .focus
+        .execute(&scene.session)
+        .map_err(|error| error.to_string())?;
+    let dto = FocusDto::from(outcome);
+    if !matches!(dto, FocusDto::NotFound) {
+        panel::hide(app);
+    }
+    Ok(dto)
 }
 
 #[tauri::command]

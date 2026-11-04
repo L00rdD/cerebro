@@ -97,3 +97,67 @@ impl NetworkDto {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::net::{IpAddr, Ipv4Addr};
+
+    use cerebro_domain::DomainError;
+
+    use super::*;
+
+    fn network(status: Option<Result<NetworkStatus, DomainError>>) -> NetworkCheck {
+        NetworkCheck {
+            id: "zerotier",
+            name: "ZeroTier".into(),
+            status,
+        }
+    }
+
+    fn state_and_message(
+        status: Option<Result<NetworkStatus, DomainError>>,
+    ) -> (&'static str, Option<String>) {
+        let dto = NetworkDto::new(
+            &network(status),
+            &[],
+            &AccessKey::new("k"),
+            Some("port taken".into()),
+        );
+        (dto.state, dto.message)
+    }
+
+    #[test]
+    fn network_state_follows_its_status() {
+        let ip = IpAddr::V4(Ipv4Addr::new(10, 0, 0, 2));
+        assert_eq!(state_and_message(None), ("off", None));
+        assert_eq!(
+            state_and_message(Some(Ok(NetworkStatus::NotInstalled))),
+            ("notInstalled", None)
+        );
+        assert_eq!(
+            state_and_message(Some(Ok(NetworkStatus::Stopped))),
+            ("stopped", None)
+        );
+        assert_eq!(
+            state_and_message(Some(Ok(NetworkStatus::Offline))),
+            ("offline", None)
+        );
+        assert_eq!(
+            state_and_message(Some(Ok(NetworkStatus::Online(vec![ip])))),
+            ("online", Some("port taken".into()))
+        );
+        assert_eq!(
+            state_and_message(Some(Err(DomainError::SourceUnavailable("cli".into())))),
+            ("error", Some("data source unavailable: cli".into()))
+        );
+    }
+
+    #[test]
+    fn network_links_carry_the_key() {
+        let address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 2)), 4243);
+        let dto = NetworkDto::new(&network(None), &[address], &AccessKey::new("abc"), None);
+        assert_eq!(dto.id, "zerotier");
+        assert_eq!(dto.name, "ZeroTier");
+        assert_eq!(dto.urls, vec!["http://10.0.0.2:4243/?key=abc".to_owned()]);
+    }
+}
