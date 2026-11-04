@@ -157,10 +157,13 @@ function movingPose(leg: Leg, movement: Movement, u: number): Pose {
   // The floor is seen at an angle: vertical moves count double when picking a facing.
   const vertical = Math.abs(dy) * 2 > Math.abs(dx);
   const flip = dx < 0;
+  // outside the object literal: bundled without its parentheses, a "<" there
+  // makes the complexity tool lose the end of the function
+  const facing = vertical ? (dy < 0 ? "back" : "front") : "side";
   return {
     x: Math.floor(from.x + dx * u),
     y: Math.floor(from.y + dy * u),
-    facing: vertical ? (dy < 0 ? "back" : "front") : "side",
+    facing,
     flip,
     frame: flying ? 0 : WALK_CYCLE[Math.floor(seconds * stepsPerSecond) % WALK_CYCLE.length]!,
     lift: flying ? hover(seed, seconds) + 3 : 0,
